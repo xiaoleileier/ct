@@ -1,11 +1,6 @@
 services:
   base: &base
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args:
-        RAILS_ENV: production
-        BUNDLE_WITHOUT: "development:test"
+    image: ghcr.io/xiaoleileier/ct:latest
     env_file: .env
     volumes:
       - storage_data:/app/storage

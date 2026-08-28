@@ -26,7 +26,7 @@ class Webhooks::Trigger
       url: @url,
       payload: @payload.to_json,
       headers: { content_type: :json, accept: :json },
-      timeout: 5
+      timeout: ENV.fetch('WEBHOOK_TIMEOUT', 10).to_i
     )
   end
 

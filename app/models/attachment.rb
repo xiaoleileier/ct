@@ -50,13 +50,24 @@ class Attachment < ApplicationRecord
 
   # NOTE: the URl returned does a 301 redirect to the actual file
   def file_url
-    file.attached? ? url_for(file) : ''
+    return '' unless file.attached?
+
+    ActiveStorage::Current.url_options = Rails.application.routes.default_url_options if ActiveStorage::Current.url_options.blank?
+    url_for(file)
+  rescue StandardError => e
+    Rails.logger.warn "Failed to generate file_url for attachment #{id}: #{e.message}"
+    ''
   end
 
   # NOTE: for External services use this methods since redirect doesn't work effectively in a lot of cases
   def download_url
+    return '' unless file.attached?
+
     ActiveStorage::Current.url_options = Rails.application.routes.default_url_options if ActiveStorage::Current.url_options.blank?
-    file.attached? ? file.blob.url : ''
+    file.blob.url
+  rescue StandardError => e
+    Rails.logger.warn "Failed to generate download_url for attachment #{id}: #{e.message}"
+    ''
   end
 
   def thumb_url

@@ -75,12 +75,24 @@ class MailPresenter < SimpleDelegator
   def attachments
     # ref : https://github.com/gorails-screencasts/action-mailbox-action-text/blob/master/app/mailboxes/posts_mailbox.rb
     mail.attachments.map do |attachment|
+      filename = clean_filename(attachment.filename)
       blob = ActiveStorage::Blob.create_and_upload!(
         io: StringIO.new(attachment.body.to_s),
-        filename: attachment.filename.presence || "attachment_#{SecureRandom.hex(4)}",
+        filename: filename.presence || "attachment_#{SecureRandom.hex(4)}",
         content_type: attachment.content_type
       )
       { original: attachment, blob: blob }
+    end
+  end
+
+  def clean_filename(raw_filename)
+    return nil if raw_filename.blank?
+
+    begin
+      decoded = Mail::Encodings.value_decode(raw_filename)
+      decoded.present? ? encode_to_unicode(decoded) : encode_to_unicode(raw_filename)
+    rescue StandardError
+      encode_to_unicode(raw_filename)
     end
   end
 

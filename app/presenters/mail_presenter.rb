@@ -181,12 +181,20 @@ class MailPresenter < SimpleDelegator
   def encode_to_unicode(str)
     return '' if str.blank?
 
-    current_encoding = str.encoding.name
-    return str if current_encoding == 'UTF-8'
+    return str if str.encoding.name == 'UTF-8' && str.valid_encoding?
 
-    str.encode(current_encoding, 'UTF-8', invalid: :replace, undef: :replace, replace: '?')
+    src_encoding = str.encoding.name
+    begin
+      str.encode('UTF-8', src_encoding, invalid: :replace, undef: :replace, replace: '?')
+    rescue Encoding::ConverterNotFoundError, Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+      begin
+        str.dup.force_encoding('GB18030').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
+      rescue StandardError
+        str.dup.force_encoding('UTF-8').scrub('?')
+      end
+    end
   rescue StandardError
-    ''
+    str.to_s.force_encoding('UTF-8').scrub('?')
   end
 
   def html_mail_body?

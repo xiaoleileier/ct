@@ -9,9 +9,8 @@ class ConversationReplyMailer < ApplicationMailer
   layout :choose_layout
 
   def reply_with_summary(conversation, last_queued_id)
-    return unless smtp_config_set_or_development?
-
     init_conversation_attributes(conversation)
+    return unless can_send_mail?
     return if conversation_already_viewed?
 
     recap_messages = @conversation.messages.chat.where('id < ?', last_queued_id).last(10)
@@ -22,9 +21,8 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def reply_without_summary(conversation, last_queued_id)
-    return unless smtp_config_set_or_development?
-
     init_conversation_attributes(conversation)
+    return unless can_send_mail?
     return if conversation_already_viewed?
 
     @messages = @conversation.messages.chat.where(message_type: [:outgoing, :template]).where('id >= ?', last_queued_id)
@@ -35,17 +33,16 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def email_reply(message)
-    return unless smtp_config_set_or_development?
-
     init_conversation_attributes(message.conversation)
+    return unless can_send_mail?
+
     @message = message
     prepare_mail(true)
   end
 
   def conversation_transcript(conversation, to_email)
-    return unless smtp_config_set_or_development?
-
     init_conversation_attributes(conversation)
+    return unless can_send_mail?
 
     @messages = @conversation.messages.chat.select(&:conversation_transcriptable?)
 
@@ -86,12 +83,30 @@ class ConversationReplyMailer < ApplicationMailer
     @conversation.messages.chat.where.not(message_type: :incoming)&.last
   end
 
+  def can_send_mail?
+    smtp_config_set_or_development? || email_smtp_enabled || email_oauth_enabled
+  end
+
   def sender_name(sender_email)
-    if @inbox.friendly?
-      I18n.t('conversations.reply.email.header.friendly_name', sender_name: custom_sender_name, business_name: business_name,
-                                                               from_email: sender_email)
-    else
-      I18n.t('conversations.reply.email.header.professional_name', business_name: business_name, from_email: sender_email)
+    raw_name = if @inbox.friendly?
+                 I18n.t('conversations.reply.email.header.friendly_name', sender_name: custom_sender_name, business_name: business_name,
+                                                                          from_email: sender_email)
+               else
+                 I18n.t('conversations.reply.email.header.professional_name', business_name: business_name, from_email: sender_email)
+               end
+
+    begin
+      email_addr = parse_email(sender_email)
+      display_name = raw_name.sub(/<[^>]+>/, '').strip
+      if display_name.present?
+        address = Mail::Address.new(email_addr)
+        address.display_name = display_name
+        address.format
+      else
+        raw_name
+      end
+    rescue StandardError
+      raw_name
     end
   end
 
@@ -175,7 +190,7 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def cc_bcc_emails
-    content_attributes = @conversation.messages.outgoing.last&.content_attributes
+    content_attributes = current_message&.content_attributes || @conversation.messages.outgoing.last&.content_attributes
 
     return [] unless content_attributes
     return [] unless content_attributes[:cc_emails] || content_attributes[:bcc_emails]
@@ -184,7 +199,7 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def to_emails_from_content_attributes
-    content_attributes = @conversation.messages.outgoing.last&.content_attributes
+    content_attributes = current_message&.content_attributes || @conversation.messages.outgoing.last&.content_attributes
 
     return [] unless content_attributes
     return [] unless content_attributes[:to_emails]

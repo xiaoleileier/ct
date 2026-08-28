@@ -267,14 +267,7 @@ export default {
       return this.isAFacebookInbox && this.inbox.reauthorization_required;
     },
     googleUnauthorized() {
-      const isLegacyInbox = ['imap.gmail.com', 'imap.google.com'].includes(
-        this.inbox.imap_address
-      );
-
-      return (
-        (this.isAGoogleInbox || isLegacyInbox) &&
-        this.inbox.reauthorization_required
-      );
+      return this.isAGoogleInbox && this.inbox.reauthorization_required;
     },
     isEmbeddedSignupWhatsApp() {
       return this.inbox.provider_config?.source === 'embedded_signup';

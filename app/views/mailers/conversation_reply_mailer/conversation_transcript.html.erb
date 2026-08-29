@@ -1,45 +1,45 @@
 <% target_url = ENV['FRONTEND_URL'].presence || "https://kf.hardbass.top" %>
 
 <tr>
-  <td style="padding-bottom: 20px;">
-    <div style="font-size: 16px; font-weight: 600; color: #0F172A; line-height: 1.4;">
-      咨询对话记录清单
+  <td style="padding-bottom: 24px;">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #86868B; margin-bottom: 8px;">
+      对话归档
     </div>
-    <div style="font-size: 13px; color: #64748B; margin-top: 4px;">
-      会话编号：#<%= @conversation.display_id %>
+    <div style="font-size: 26px; font-weight: 600; color: #1D1D1F; line-height: 1.25; letter-spacing: -0.02em;">
+      咨询记录（#<%= @conversation.display_id %>）
     </div>
   </td>
 </tr>
 
 <tr>
-  <td style="padding-bottom: 24px;">
-    <div style="border-left: 2px solid #E2E8F0; padding-left: 16px; margin-left: 4px;">
+  <td>
+    <div style="border-top: 1px solid #E5E5EA; padding-top: 20px;">
       <% @messages.each do |message| %>
         <% is_customer = message.incoming? %>
-        <div style="margin-bottom: 20px;">
-          <div style="font-size: 13px; font-weight: 600; color: <%= is_customer ? '#2563EB' : '#0F172A' %>; margin-bottom: 4px;">
-            <%= is_customer ? '您' : (message.sender&.try(:available_name) || message.sender&.name || '在线客服') %>
-            <span style="font-size: 12px; font-weight: normal; color: #94A3B8; margin-left: 8px;">
+        <div style="margin-bottom: 24px;">
+          <div style="font-size: 13px; font-weight: 600; color: <%= is_customer ? '#0071E3' : '#1D1D1F' %>; margin-bottom: 6px;">
+            <%= is_customer ? '您' : (message.sender&.try(:available_name) || message.sender&.name || '客服代表') %>
+            <span style="font-size: 12px; font-weight: 400; color: #86868B; margin-left: 8px;">
               <% if @inbox.timezone.present? %>
-                <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%Y-%m-%d %H:%M') %>
+                <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%Y年%m月%d日 %H:%M') %>
               <% else %>
-                <%= message.created_at.strftime('%Y-%m-%d %H:%M') %>
+                <%= message.created_at.strftime('%Y年%m月%d日 %H:%M') %>
               <% end %>
             </span>
           </div>
 
-          <div style="background: <%= is_customer ? '#F0F9FF' : '#F8FAFC' %>; border: 1px solid <%= is_customer ? '#E0F2FE' : '#E2E8F0' %>; border-radius: 8px; padding: 12px 16px; color: #1E293B; font-size: 14px; line-height: 1.6;">
+          <div style="padding: 16px 20px; background-color: #F5F5F7; border-radius: 14px; color: #1D1D1F; font-size: 14px; line-height: 1.6;">
             <% if message.content.present? %>
               <div style="margin: 0;">
                 <%= ChatwootMarkdownRenderer.new(message.content).render_message %>
               </div>
             <% end %>
             <% if message.attachments.present? %>
-              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E2E8F0; font-size: 13px; color: #64748B;">
-                <span style="font-weight: 500;">附件：</span>
+              <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #E5E5EA; font-size: 13px; color: #86868B;">
+                附件：
                 <% message.attachments.each_with_index do |attachment, index| %>
-                  <% if index > 0 %><span style="margin: 0 6px; color: #CBD5E1;">|</span><% end %>
-                  <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: underline;"><%= attachment.file.filename.to_s %></a>
+                  <% if index > 0 %><span style="margin: 0 6px; color: #D2D2D7;">·</span><% end %>
+                  <a href="<%= attachment.file_url %>" target="_blank" style="color: #0071E3; text-decoration: none;"><%= attachment.file.filename.to_s %></a>
                 <% end %>
               </div>
             <% end %>
@@ -51,9 +51,15 @@
 </tr>
 
 <tr>
-  <td style="padding-bottom: 12px; text-align: center;">
-    <a href="<%= target_url %>" target="_blank" style="display: inline-block; background: #0F172A; color: #FFFFFF; font-size: 13px; font-weight: 500; padding: 10px 24px; border-radius: 6px; text-decoration: none;">
-      回到网站继续沟通 &rarr;
-    </a>
+  <td style="padding-top: 24px; padding-bottom: 12px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+      <tr>
+        <td style="border-radius: 24px; background-color: #0071E3; text-align: center;">
+          <a href="<%= target_url %>" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 400; color: #FFFFFF; text-decoration: none; border-radius: 24px; letter-spacing: -0.01em;">
+            回到网站查看并回复
+          </a>
+        </td>
+      </tr>
+    </table>
   </td>
 </tr>

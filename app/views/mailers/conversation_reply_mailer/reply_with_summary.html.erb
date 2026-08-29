@@ -1,39 +1,32 @@
 <% outgoing_messages = @messages.reject(&:incoming?) %>
 <% latest_agent_message = outgoing_messages.last || @messages.last %>
-<% agent_name = latest_agent_message&.sender&.available_name || latest_agent_message&.sender&.name || '在线客服' %>
-<% agent_initial = agent_name.strip[0..0].upcase rescue '客' %>
+<% agent_name = latest_agent_message&.sender&.available_name || latest_agent_message&.sender&.name || '客服代表' %>
 <% target_url = ENV['FRONTEND_URL'].presence || "https://kf.hardbass.top" %>
 
-<!-- Agent Header -->
+<!-- Apple Header -->
 <tr>
   <td style="padding-bottom: 24px;">
-    <table cellpadding="0" cellspacing="0" border="0" width="100%">
-      <tr>
-        <td width="44" valign="top" style="padding-right: 12px;">
-          <div style="width: 40px; height: 40px; border-radius: 50%; background: #2563EB; color: #FFFFFF; font-size: 15px; font-weight: 600; line-height: 40px; text-align: center; text-transform: uppercase;">
-            <%= agent_initial %>
-          </div>
-        </td>
-        <td valign="middle">
-          <div style="font-size: 15px; font-weight: 600; color: #0F172A; line-height: 1.3;">
-            <%= agent_name %>
-            <span style="font-size: 11px; font-weight: 500; color: #2563EB; background: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 4px; padding: 2px 6px; margin-left: 6px; vertical-align: middle;">客服回复</span>
-          </div>
-          <div style="font-size: 12px; color: #94A3B8; margin-top: 3px;">
-            <%= latest_agent_message&.created_at&.in_time_zone('Beijing')&.strftime('%Y-%m-%d %H:%M') rescue '' %>
-          </div>
-        </td>
-      </tr>
-    </table>
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #86868B; margin-bottom: 8px;">
+      客户支持
+    </div>
+    <div style="font-size: 26px; font-weight: 600; color: #1D1D1F; line-height: 1.25; letter-spacing: -0.02em;">
+      您有新的咨询回复
+    </div>
   </td>
 </tr>
 
-<!-- Latest Message Content -->
+<!-- Apple Message Box -->
 <tr>
-  <td style="padding-bottom: 28px;">
-    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 18px 20px; color: #1E293B; font-size: 14px; line-height: 1.7;">
+  <td style="padding: 24px; background-color: #F5F5F7; border-radius: 18px; margin-bottom: 28px;">
+    <div style="font-size: 13px; font-weight: 600; color: #1D1D1F; margin-bottom: 12px;">
+      <%= agent_name %>
+      <span style="font-size: 12px; font-weight: 400; color: #86868B; margin-left: 8px;">
+        <%= latest_agent_message&.created_at&.in_time_zone('Beijing')&.strftime('%m月%d日 %H:%M') rescue '' %>
+      </span>
+    </div>
+    <div style="font-size: 15px; color: #1D1D1F; line-height: 1.6; letter-spacing: -0.01em;">
       <% if (latest_agent_message&.content_type == 'input_csat' && latest_agent_message&.message_type == 'template') %>
-        <p style="margin: 0;">请点击 <a href="<%= @conversation.csat_survey_link %>" target="_blank" style="color: #2563EB; text-decoration: underline; font-weight: 500;">此处</a> 对本次客服服务进行评价。</p>
+        <p style="margin: 0;">请点击 <a href="<%= @conversation.csat_survey_link %>" target="_blank" style="color: #0071E3; text-decoration: none;">此处</a> 对本次客服服务进行评价。</p>
       <% elsif latest_agent_message&.content.present? %>
         <div style="margin: 0;">
           <%= ChatwootMarkdownRenderer.new(latest_agent_message.content).render_message %>
@@ -41,11 +34,11 @@
       <% end %>
 
       <% if latest_agent_message&.attachments&.count&.positive? %>
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #E2E8F0; font-size: 13px; color: #64748B;">
-          <span style="font-weight: 500; color: #475569;">附件下载：</span>
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #E5E5EA; font-size: 13px; color: #86868B;">
+          附件：
           <% latest_agent_message.attachments.each_with_index do |attachment, index| %>
-            <% if index > 0 %><span style="margin: 0 6px; color: #CBD5E1;">|</span><% end %>
-            <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: underline; font-weight: 500;"><%= attachment.file.filename.to_s %></a>
+            <% if index > 0 %><span style="margin: 0 6px; color: #D2D2D7;">·</span><% end %>
+            <a href="<%= attachment.file_url %>" target="_blank" style="color: #0071E3; text-decoration: none;"><%= attachment.file.filename.to_s %></a>
           <% end %>
         </div>
       <% end %>
@@ -53,33 +46,39 @@
   </td>
 </tr>
 
-<!-- Action Button -->
+<!-- Apple Pill Button -->
 <tr>
-  <td style="padding-bottom: 32px; text-align: center;">
-    <a href="<%= target_url %>" target="_blank" style="display: inline-block; background: #0F172A; color: #FFFFFF; font-size: 13px; font-weight: 500; padding: 10px 24px; border-radius: 6px; text-decoration: none; letter-spacing: 0.2px;">
-      回到网站查看并回复 &rarr;
-    </a>
+  <td style="padding-top: 28px; padding-bottom: 12px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+      <tr>
+        <td style="border-radius: 24px; background-color: #0071E3; text-align: center;">
+          <a href="<%= target_url %>" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 400; color: #FFFFFF; text-decoration: none; border-radius: 24px; letter-spacing: -0.01em;">
+            回到网站查看并回复
+          </a>
+        </td>
+      </tr>
+    </table>
   </td>
 </tr>
 
-<!-- Earlier History if multiple messages -->
+<!-- History Accordion/Timeline -->
 <% previous_messages = @messages.reject { |m| m.id == latest_agent_message&.id } %>
 <% if previous_messages.present? %>
   <tr>
-    <td style="padding-top: 16px; border-top: 1px solid #F1F5F9;">
-      <div style="font-size: 12px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-        历史消息记录
+    <td style="padding-top: 40px;">
+      <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #86868B; margin-bottom: 16px; border-bottom: 1px solid #E5E5EA; padding-bottom: 8px;">
+        先前对话记录
       </div>
       <% previous_messages.each do |message| %>
         <% is_customer = message.incoming? %>
-        <div style="margin-bottom: 12px; padding: 10px 14px; background: <%= is_customer ? '#FFFFFF' : '#F8FAFC' %>; border: 1px solid #F1F5F9; border-radius: 6px;">
-          <div style="font-size: 12px; color: #64748B; margin-bottom: 4px; font-weight: 500;">
-            <%= is_customer ? '您' : (message.sender&.available_name || message.sender&.name || '客服') %>
-            <span style="font-size: 11px; font-weight: normal; color: #CBD5E1; margin-left: 6px;">
-              <%= message.created_at.in_time_zone('Beijing').strftime('%H:%M') rescue '' %>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 13px; font-weight: 500; color: #6E6E73; margin-bottom: 4px;">
+            <%= is_customer ? '您' : (message.sender&.available_name || message.sender&.name || '客服代表') %>
+            <span style="font-size: 12px; color: #86868B; margin-left: 6px;">
+              <%= message.created_at.in_time_zone('Beijing').strftime('%m月%d日 %H:%M') rescue '' %>
             </span>
           </div>
-          <div style="font-size: 13px; color: #475569; line-height: 1.5;">
+          <div style="font-size: 14px; color: #1D1D1F; line-height: 1.5;">
             <%= ChatwootMarkdownRenderer.new(message.content).render_message if message.content.present? %>
           </div>
         </div>

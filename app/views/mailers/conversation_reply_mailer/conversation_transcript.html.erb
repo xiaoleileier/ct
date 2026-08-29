@@ -1,56 +1,59 @@
+<% target_url = ENV['FRONTEND_URL'].presence || "https://kf.hardbass.top" %>
+
 <tr>
-  <td style="padding-bottom: 20px; font-size: 15px; color: #111827; font-weight: 500;">
-    以下是您的咨询对话记录（#<%= @conversation.display_id %>）：
+  <td style="padding-bottom: 20px;">
+    <div style="font-size: 16px; font-weight: 600; color: #0F172A; line-height: 1.4;">
+      咨询对话记录清单
+    </div>
+    <div style="font-size: 13px; color: #64748B; margin-top: 4px;">
+      会话编号：#<%= @conversation.display_id %>
+    </div>
   </td>
 </tr>
 
-<% @messages.each do |message| %>
-  <% is_customer = message.incoming? %>
-  <tr>
-    <td style="padding-bottom: 16px;">
-      <div style="font-size: 13px; color: #6B7280; margin-bottom: 6px; font-weight: 500;">
-        <%= is_customer ? '您' : (message.sender&.try(:available_name) || message.sender&.name || '客服') %>
-        <span style="font-size: 12px; font-weight: normal; color: #9CA3AF; margin-left: 6px;">
-          <% if @inbox.timezone.present? %>
-            <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%Y-%m-%d %H:%M') %>
-          <% else %>
-            <%= message.created_at.strftime('%Y-%m-%d %H:%M') %>
-          <% end %>
-        </span>
-      </div>
-      <% if message.conversation.inbox&.inbox_type == 'Email' %>
-        <div style="font-size: 12px; color: #9CA3AF; line-height: 18px; margin-bottom: 6px;">
-          <% if message.content_attributes.dig(:email, :from).present? %>
-            <div>发件人：<%= message.content_attributes.dig(:email, :from).join(", ") %></div>
-          <% else %>
-            <div>发件人：<%= message.sender&.try(:email) %></div>
-          <% end %>
-
-          <% if message.content_attributes.dig(:email, :subject).present? %>
-            <div>主题：<%= message.content_attributes.dig(:email, :subject) %></div>
-          <% end %>
-
-          <% if message.content_attributes[:to_emails].present? %>
-            <div>收件人：<%= message.content_attributes[:to_emails].join(", ") %></div>
-          <% end %>
-        </div>
-      <% end %>
-      <div style="padding: 12px 16px; background-color: <%= is_customer ? '#F3F4F6' : '#F9FAFB' %>; border: 1px solid #E5E7EB; border-radius: 6px; color: #1F2937; font-size: 14px; line-height: 1.6;">
-        <% if message.content %>
-          <div style="margin: 0;">
-            <%= ChatwootMarkdownRenderer.new(message.content).render_message %>
+<tr>
+  <td style="padding-bottom: 24px;">
+    <div style="border-left: 2px solid #E2E8F0; padding-left: 16px; margin-left: 4px;">
+      <% @messages.each do |message| %>
+        <% is_customer = message.incoming? %>
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 13px; font-weight: 600; color: <%= is_customer ? '#2563EB' : '#0F172A' %>; margin-bottom: 4px;">
+            <%= is_customer ? '您' : (message.sender&.try(:available_name) || message.sender&.name || '在线客服') %>
+            <span style="font-size: 12px; font-weight: normal; color: #94A3B8; margin-left: 8px;">
+              <% if @inbox.timezone.present? %>
+                <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%Y-%m-%d %H:%M') %>
+              <% else %>
+                <%= message.created_at.strftime('%Y-%m-%d %H:%M') %>
+              <% end %>
+            </span>
           </div>
-        <% end %>
-        <% if message.attachments.present? %>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E5E7EB; font-size: 13px; color: #4B5563;">
-            附件：
-            <% message.attachments.each_with_index do |attachment, index| %>
-              <% if index > 0 %><span style="margin: 0 6px; color: #D1D5DB;">|</span><% end %>
-              <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: underline;"><%= attachment.file.filename.to_s %></a>
+
+          <div style="background: <%= is_customer ? '#F0F9FF' : '#F8FAFC' %>; border: 1px solid <%= is_customer ? '#E0F2FE' : '#E2E8F0' %>; border-radius: 8px; padding: 12px 16px; color: #1E293B; font-size: 14px; line-height: 1.6;">
+            <% if message.content.present? %>
+              <div style="margin: 0;">
+                <%= ChatwootMarkdownRenderer.new(message.content).render_message %>
+              </div>
+            <% end %>
+            <% if message.attachments.present? %>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E2E8F0; font-size: 13px; color: #64748B;">
+                <span style="font-weight: 500;">附件：</span>
+                <% message.attachments.each_with_index do |attachment, index| %>
+                  <% if index > 0 %><span style="margin: 0 6px; color: #CBD5E1;">|</span><% end %>
+                  <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: underline;"><%= attachment.file.filename.to_s %></a>
+                <% end %>
+              </div>
             <% end %>
           </div>
-        <% end %>
-      </div>
-    </td>
-  </tr>
-<% end %>
+        </div>
+      <% end %>
+    </div>
+  </td>
+</tr>
+
+<tr>
+  <td style="padding-bottom: 12px; text-align: center;">
+    <a href="<%= target_url %>" target="_blank" style="display: inline-block; background: #0F172A; color: #FFFFFF; font-size: 13px; font-weight: 500; padding: 10px 24px; border-radius: 6px; text-decoration: none;">
+      回到网站继续沟通 &rarr;
+    </a>
+  </td>
+</tr>

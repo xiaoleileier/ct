@@ -4,8 +4,11 @@
 <%= ChatwootMarkdownRenderer.new(@message.outgoing_content).render_message %>
 <% end %>
 <% if @large_attachments.present? %>
-<p>Attachments:</p>
-<% @large_attachments.each do |attachment| %>
-<p><a href="<%= attachment.file_url %>" target="_blank"><%= attachment.file.filename.to_s %></a></p>
-<% end %>
+<div style="margin-top: 12px; padding: 10px 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 13px; color: #64748B;">
+  📎 附件下载：
+  <% @large_attachments.each_with_index do |attachment, index| %>
+    <% if index > 0 %><br /><% end %>
+    <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: none;"><%= attachment.file.filename.to_s %></a>
+  <% end %>
+</div>
 <% end %>

@@ -1,50 +1,58 @@
+<tr>
+  <td style="padding-bottom: 16px; font-size: 15px; color: #1E293B; line-height: 1.6;">
+    尊敬的客户，您好：
+    <div style="margin-top: 4px; color: #64748B; font-size: 14px;">以下是您在 <b>[#<%= @conversation.display_id %>]</b> 咨询中的完整对话记录：</div>
+  </td>
+</tr>
+
 <% @messages.each do |message| %>
   <tr>
-    <td>
-      <b><%= message.sender&.try(:available_name) || message.sender&.name || '' %></b>
+    <td style="padding-top: 12px;">
+      <div style="font-size: 13px; font-weight: 600; color: <%= message.incoming? ? '#0284C7' : '#0F172A' %>; margin-bottom: 4px;">
+        <%= message.incoming? ? '您' : (message.sender&.try(:available_name) || message.sender&.name || '在线客服') %>
+      </div>
       <% if message.conversation.inbox&.inbox_type == 'Email' %>
-        <div style="font-size: 90%; color: #899096; line-height: 16px">
+        <div style="font-size: 12px; color: #94A3B8; line-height: 16px; margin-bottom: 6px;">
           <% if message.content_attributes.dig(:email, :from).present? %>
-            <div>From: <%= message.content_attributes.dig(:email, :from).join(", ") %></div>
+            <div>发件人：<%= message.content_attributes.dig(:email, :from).join(", ") %></div>
           <% else %>
-            <div>From: <%= message.sender&.try(:email) %></div>
+            <div>发件人：<%= message.sender&.try(:email) %></div>
           <% end %>
 
           <% if message.content_attributes.dig(:email, :subject).present? %>
-            <div>Subject: <%= message.content_attributes.dig(:email, :subject) %></div>
+            <div>主题：<%= message.content_attributes.dig(:email, :subject) %></div>
           <% end %>
 
           <% if message.content_attributes[:to_emails].present? %>
-            <div>To: <%= message.content_attributes[:to_emails].join(", ") %></div>
-          <% end %>
-          <% if message.content_attributes[:cc_emails].present? %>
-            <div>CC: <%= message.content_attributes[:cc_emails].join(", ") %></div>
-          <% end %>
-          <% if message.content_attributes[:bcc_emails].present? %>
-            <div>BCC: <%= message.content_attributes[:bcc_emails].join(", ") %></div>
+            <div>收件人：<%= message.content_attributes[:to_emails].join(", ") %></div>
           <% end %>
         </div>
       <% end %>
     </td>
   </tr>
   <tr>
-    <td style="padding-bottom: 32px;">
+    <td style="padding: 12px 16px; margin: 0 0 12px 0; background: <%= message.incoming? ? '#F0F9FF' : '#F8FAFC' %>; border-left: 3px solid <%= message.incoming? ? '#0284C7' : '#3B82F6' %>; border-radius: 0 8px 8px 0;">
       <% if message.content %>
-        <%= ChatwootMarkdownRenderer.new(message.content).render_message %>
+        <div style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">
+          <%= ChatwootMarkdownRenderer.new(message.content).render_message %>
+        </div>
       <% end %>
       <% if message.attachments.present? %>
-        <p>Attachments:</p>
-        <% message.attachments.each do |attachment| %>
-          <p><a href="<%= attachment.file_url %>" target="_blank"><%= attachment.file.filename.to_s %></a></p>
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1; font-size: 13px; color: #64748B;">
+          📎 附件：
+          <% message.attachments.each_with_index do |attachment, index| %>
+            <% if index > 0 %><span style="margin: 0 4px;">|</span><% end %>
+            <a href="<%= attachment.file_url %>" target="_blank" style="color: #2563EB; text-decoration: none;"><%= attachment.file.filename.to_s %></a>
+          <% end %>
+        </div>
+      <% end %>
+      <div style="font-size: 12px; color: #94A3B8; margin-top: 8px; text-align: right;">
+        <% if @inbox.timezone.present? %>
+          <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%Y-%m-%d %H:%M') %>
+        <% else %>
+          <%= message.created_at.strftime('%Y-%m-%d %H:%M') %>
         <% end %>
-      <% end %>
-      <p style="font-size: 90%; font-size: 90%;color: #899096;margin-top: -8px; margin-bottom: 0px;">
-      <% if @inbox.timezone.present? %>
-        <%= message.created_at.in_time_zone(@inbox.timezone).strftime('%b %d, %I:%M %p %Z') %>
-      <% else %>
-        <%= message.created_at.strftime('%b %d, %I:%M %p %Z') %>
-      <% end %>
-      </p>
+      </div>
     </td>
   </tr>
 <% end %>

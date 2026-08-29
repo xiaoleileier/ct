@@ -86,19 +86,31 @@ module ConversationReplyMailerHelper
     }
   end
 
+  def fallback_smtp_channel
+    @fallback_smtp_channel ||= @account&.inboxes&.where(channel_type: 'Channel::Email')
+                                        &.map(&:channel)
+                                        &.find { |c| c&.smtp_enabled? && c&.smtp_address.present? }
+  end
+
   def set_delivery_method
-    return unless @inbox.inbox_type == 'Email' && @channel.smtp_enabled
+    target_channel = if @inbox.inbox_type == 'Email' && @channel.try(:smtp_enabled)
+                       @channel
+                     elsif !smtp_config_set_or_development? && fallback_smtp_channel.present?
+                       fallback_smtp_channel
+                     end
+
+    return unless target_channel
 
     smtp_settings = {
-      address: @channel.smtp_address,
-      port: @channel.smtp_port,
-      user_name: @channel.smtp_login,
-      password: @channel.smtp_password,
-      domain: @channel.smtp_domain,
-      tls: @channel.smtp_enable_ssl_tls,
-      enable_starttls_auto: @channel.smtp_enable_starttls_auto,
-      openssl_verify_mode: @channel.smtp_openssl_verify_mode,
-      authentication: @channel.smtp_authentication
+      address: target_channel.smtp_address,
+      port: target_channel.smtp_port,
+      user_name: target_channel.smtp_login,
+      password: target_channel.smtp_password,
+      domain: target_channel.smtp_domain,
+      tls: target_channel.smtp_enable_ssl_tls,
+      enable_starttls_auto: target_channel.smtp_enable_starttls_auto,
+      openssl_verify_mode: target_channel.smtp_openssl_verify_mode,
+      authentication: target_channel.smtp_authentication
     }
 
     @options[:delivery_method] = :smtp
@@ -133,7 +145,19 @@ module ConversationReplyMailerHelper
   def channel_email_domain
     return @account.inbound_email_domain if @account.inbound_email_domain.present?
 
-    email = @inbox.channel.try(:email)
-    email.present? ? email.split('@').last : raise(StandardError, 'Channel email domain not present.')
+    email = @inbox.channel.try(:email) || fallback_smtp_channel&.email
+    return email.split('@').last if email.present?
+
+    if ENV['MAILER_SENDER_EMAIL'].present?
+      sender_domain = (Mail::Address.new(ENV['MAILER_SENDER_EMAIL']).domain rescue nil)
+      return sender_domain if sender_domain.present?
+    end
+
+    if ENV['FRONTEND_URL'].present?
+      frontend_domain = (URI.parse(ENV['FRONTEND_URL']).host rescue nil)
+      return frontend_domain if frontend_domain.present?
+    end
+
+    'chatwoot.com'
   end
 end

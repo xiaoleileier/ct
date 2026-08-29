@@ -84,7 +84,7 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def can_send_mail?
-    smtp_config_set_or_development? || email_smtp_enabled || email_oauth_enabled
+    smtp_config_set_or_development? || email_smtp_enabled || email_oauth_enabled || fallback_smtp_channel.present?
   end
 
   def sender_name(sender_email)
@@ -123,7 +123,12 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def from_email
-    should_use_conversation_email_address? ? parse_email(@account.support_email) : parse_email(inbox_from_email_address)
+    email = if should_use_conversation_email_address?
+              @account.support_email
+            else
+              inbox_from_email_address
+            end
+    parse_email(email.presence || fallback_smtp_channel&.email || ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>'))
   end
 
   def mail_subject
@@ -142,7 +147,7 @@ class ConversationReplyMailer < ApplicationMailer
     if should_use_conversation_email_address?
       sender_name("reply+#{@conversation.uuid}@#{@account.inbound_email_domain}")
     else
-      @inbox.email_address || @agent&.email
+      @inbox.email_address || @agent&.email || fallback_smtp_channel&.email || from_email
     end
   end
 
@@ -151,17 +156,21 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def channel_email_with_name
-    sender_name(@channel.email)
+    sender_name(@channel.try(:email) || from_email)
   end
 
   def parse_email(email_string)
+    return '' if email_string.blank?
+
     Mail::Address.new(email_string).address
+  rescue StandardError
+    email_string.to_s
   end
 
   def inbox_from_email_address
-    return @inbox.email_address if @inbox.email_address
+    return @inbox.email_address if @inbox.email_address.present?
 
-    @account.support_email
+    @account.support_email.presence || fallback_smtp_channel&.email || ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>')
   end
 
   def custom_message_id

@@ -17,6 +17,7 @@ class Captain::Llm::EmbeddingService < Llm::BaseOpenAiService
 
     response.dig('data', 0, 'embedding')
   rescue StandardError => e
-    raise EmbeddingsError, "Failed to create an embedding: #{e.message}"
+    Rails.logger.warn "[Captain] Embedding request failed: #{e.message}"
+    nil
   end
 end

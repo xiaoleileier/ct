@@ -42,11 +42,16 @@ class Captain::AssistantResponse < ApplicationRecord
   scope :by_assistant, ->(assistant_id) { where(assistant_id: assistant_id) }
   scope :with_document, ->(document_id) { where(document_id: document_id) }
 
-  enum status: { pending: 0, approved: 1 }
-
   def self.search(query)
     embedding = Captain::Llm::EmbeddingService.new.get_embedding(query)
-    nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
+    if embedding.present?
+      nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
+    else
+      where('question ILIKE :q OR answer ILIKE :q', q: "%#{query}%").limit(5)
+    end
+  rescue StandardError => e
+    Rails.logger.warn "Embedding search fallback: #{e.message}"
+    where('question ILIKE :q OR answer ILIKE :q', q: "%#{query}%").limit(5)
   end
 
   private

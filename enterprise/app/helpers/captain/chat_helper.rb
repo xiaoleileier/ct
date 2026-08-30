@@ -85,7 +85,12 @@ module Captain::ChatHelper
       },
       'assistant_thinking'
     )
-    result = @tool_registry.send(function_name, arguments)
+    result = begin
+      @tool_registry.send(function_name, arguments)
+    rescue StandardError => e
+      Rails.logger.warn "Tool #{function_name} execution error: #{e.message}"
+      'No relevant documentation found'
+    end
     persist_message(
       {
         content: I18n.t('captain.copilot.completed_tool_call', function_name: function_name),

@@ -43,9 +43,26 @@ class Captain::AssistantResponse < ApplicationRecord
   scope :with_document, ->(document_id) { where(document_id: document_id) }
 
   def self.search(query)
+    return none if query.blank?
+
     embedding = Captain::Llm::EmbeddingService.new.get_embedding(query)
-    if embedding.present?
-      nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
+    return nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5) if embedding.present?
+
+    # Smart multi-term text search fallback (splits English words and Chinese 2-character n-grams)
+    terms = query.to_s.scan(/[a-zA-Z0-9_-]+|[\p{Han}]{2,}/).map(&:strip).reject(&:blank?)
+    terms << query.to_s.strip if terms.empty?
+
+    conditions = []
+    bindings = {}
+
+    terms.each_with_index do |term, idx|
+      key = "term_#{idx}"
+      conditions << "(question ILIKE :#{key} OR answer ILIKE :#{key})"
+      bindings[key.to_sym] = "%#{term}%"
+    end
+
+    if conditions.any?
+      where(conditions.join(' OR '), bindings).limit(5)
     else
       where('question ILIKE :q OR answer ILIKE :q', q: "%#{query}%").limit(5)
     end

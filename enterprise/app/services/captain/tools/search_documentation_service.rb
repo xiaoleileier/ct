@@ -25,7 +25,10 @@ class Captain::Tools::SearchDocumentationService < Captain::Tools::BaseService
     Rails.logger.info { "#{self.class.name}: #{query}" }
 
     responses = begin
-      assistant.responses.approved.search(query)
+      base_scope = assistant.account.captain_assistant_responses.where(
+        'assistant_id = ? OR assistant_id IS NULL', assistant.id
+      )
+      base_scope.search(query)
     rescue StandardError => e
       Rails.logger.warn "SearchDocumentationService search error: #{e.message}"
       []

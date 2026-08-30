@@ -37,17 +37,21 @@ module Captain::ChatHelper
       process_tool_calls(message['tool_calls'])
     else
       content_str = message['content'].to_s.strip
+      clean_str = content_str.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+
+      reply_text = clean_str
       begin
-        parsed = JSON.parse(content_str)
-        result = parsed.is_a?(Hash) ? parsed : { 'content' => content_str, 'response' => content_str }
+        parsed = JSON.parse(clean_str)
+        if parsed.is_a?(Hash)
+          reply_text = parsed['response'] || parsed['result'] || parsed['content'] || parsed['message'] || clean_str
+        end
       rescue JSON::ParserError
-        result = { 'content' => content_str, 'response' => content_str }
+        if clean_str =~ /"response"\s*:\s*"((?:[^"\\]|\\.)*)"/m
+          reply_text = $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\\\/, '\\')
+        end
       end
 
-      reply_text = result['content'] || result['response'] || result['message'] || content_str
-      result['content'] = reply_text
-      result['response'] = reply_text
-
+      result = { 'content' => reply_text, 'response' => reply_text }
       persist_message(result, 'assistant')
       result
     end

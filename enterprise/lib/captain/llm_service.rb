@@ -50,15 +50,23 @@ class Captain::LlmService
   end
 
   def handle_direct_response(response)
-    content = response.dig('choices', 0, 'message', 'content').strip
-    parsed = JSON.parse(content)
+    content = response.dig('choices', 0, 'message', 'content').to_s.strip
+    clean_str = content.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
 
-    {
-      output: parsed['result'] || parsed['thought_process'],
-      stop: parsed['stop'] || false
-    }
-  rescue JSON::ParserError => e
-    handle_error(e, content)
+    begin
+      parsed = JSON.parse(clean_str)
+      out = parsed['response'] || parsed['result'] || parsed['content'] || parsed['thought_process'] || clean_str
+      {
+        output: out,
+        stop: parsed['stop'] || false
+      }
+    rescue JSON::ParserError
+      if clean_str =~ /"response"\s*:\s*"((?:[^"\\]|\\.)*)"/m
+        res = $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\\\/, '\\')
+        return { output: res, stop: false }
+      end
+      { output: clean_str, stop: false }
+    end
   end
 
   def handle_error(error, content = nil)

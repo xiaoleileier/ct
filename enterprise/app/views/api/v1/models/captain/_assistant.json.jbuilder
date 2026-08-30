@@ -1,3 +1,5 @@
+return if resource.blank?
+
 json.account_id resource.account_id
 json.config resource.config
 json.created_at resource.created_at.to_i

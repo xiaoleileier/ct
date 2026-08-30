@@ -1,6 +1,10 @@
 json.account_id resource.account_id
-json.assistant do
-  json.partial! 'api/v1/models/captain/assistant', formats: [:json], resource: resource.assistant
+if resource.assistant.present?
+  json.assistant do
+    json.partial! 'api/v1/models/captain/assistant', formats: [:json], resource: resource.assistant
+  end
+else
+  json.assistant nil
 end
 json.content resource.content
 json.content_type resource.content_type

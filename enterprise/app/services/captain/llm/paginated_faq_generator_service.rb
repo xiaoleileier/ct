@@ -143,7 +143,8 @@ class Captain::Llm::PaginatedFaqGeneratorService < Llm::BaseOpenAiService
     content = response.dig('choices', 0, 'message', 'content')
     return [] if content.nil?
 
-    JSON.parse(content.strip).fetch('faqs', [])
+    clean_str = content.to_s.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+    JSON.parse(clean_str).fetch('faqs', [])
   rescue JSON::ParserError => e
     Rails.logger.error "Error parsing response: #{e.message}"
     []
@@ -153,7 +154,8 @@ class Captain::Llm::PaginatedFaqGeneratorService < Llm::BaseOpenAiService
     content = response.dig('choices', 0, 'message', 'content')
     return { 'faqs' => [], 'has_content' => false } if content.nil?
 
-    JSON.parse(content.strip)
+    clean_str = content.to_s.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+    JSON.parse(clean_str)
   rescue JSON::ParserError => e
     Rails.logger.error "Error parsing chunk response: #{e.message}"
     { 'faqs' => [], 'has_content' => false }

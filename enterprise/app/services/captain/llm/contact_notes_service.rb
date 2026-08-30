@@ -49,7 +49,8 @@ class Captain::Llm::ContactNotesService < Llm::BaseOpenAiService
     content = response.dig('choices', 0, 'message', 'content')
     return [] if content.nil?
 
-    JSON.parse(content.strip).fetch('notes', [])
+    clean_str = content.to_s.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+    JSON.parse(clean_str).fetch('notes', [])
   rescue JSON::ParserError => e
     Rails.logger.error "Error in parsing GPT processed response: #{e.message}"
     []

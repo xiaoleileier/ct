@@ -49,11 +49,16 @@ class Captain::Llm::ConversationFaqService < Llm::BaseOpenAiService
   end
 
   def find_similar_faqs(embedding)
+    return [] if embedding.blank?
+
     similar_faqs = assistant
                    .responses
                    .nearest_neighbors(:embedding, embedding, distance: 'cosine')
     Rails.logger.debug(similar_faqs.map { |faq| [faq.question, faq.neighbor_distance] })
     similar_faqs.select { |record| record.neighbor_distance < DISTANCE_THRESHOLD }
+  rescue StandardError => e
+    Rails.logger.warn "[ConversationFaqService] find_similar_faqs error: #{e.message}"
+    []
   end
 
   def save_new_faqs(faqs)
@@ -112,7 +117,8 @@ class Captain::Llm::ConversationFaqService < Llm::BaseOpenAiService
     content = response.dig('choices', 0, 'message', 'content')
     return [] if content.nil?
 
-    JSON.parse(content.strip).fetch('faqs', [])
+    clean_str = content.to_s.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+    JSON.parse(clean_str).fetch('faqs', [])
   rescue JSON::ParserError => e
     Rails.logger.error "Error in parsing GPT processed response: #{e.message}"
     []

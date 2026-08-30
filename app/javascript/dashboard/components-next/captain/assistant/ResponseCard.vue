@@ -73,7 +73,7 @@ const modelValue = computed({
 });
 
 const statusAction = computed(() => {
-  if (props.status === 'pending') {
+  if (String(props.status) === 'pending' || props.status === 0) {
     return [
       {
         label: t('CAPTAIN.RESPONSES.OPTIONS.APPROVE'),
@@ -210,14 +210,14 @@ const handleDocumentableClick = () => {
           <span v-else />
         </div>
         <div
-          v-if="status !== 'approved'"
+          v-if="status && status !== 'approved' && status !== 1"
           class="shrink-0 text-sm text-n-slate-11 line-clamp-1 inline-flex items-center gap-1 ml-3"
         >
           <i
             class="i-ph-stack text-base"
             :title="t('CAPTAIN.RESPONSES.STATUS.TITLE')"
           />
-          {{ t(`CAPTAIN.RESPONSES.STATUS.${status.toUpperCase()}`) }}
+          {{ t(`CAPTAIN.RESPONSES.STATUS.${String(status || 'approved').toUpperCase()}`) }}
         </div>
       </div>
       <div

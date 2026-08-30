@@ -15,8 +15,10 @@ class Llm::BaseOpenAiService
   private
 
   def uri_base
-    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value
-    endpoint.presence || 'https://api.openai.com/'
+    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.to_s.strip.chomp('/')
+    return 'https://api.openai.com/v1' if endpoint.blank?
+
+    endpoint.end_with?('/v1') ? endpoint : "#{endpoint}/v1"
   end
 
   def setup_model

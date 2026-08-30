@@ -3,10 +3,13 @@ require 'openai'
 class Captain::LlmService
   def initialize(config)
     api_key = config[:api_key].presence || InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_API_KEY')&.value
-    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
+    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.to_s.strip.chomp('/')
+    endpoint = 'https://api.openai.com' if endpoint.blank?
+    uri_base = endpoint.end_with?('/v1') ? endpoint : "#{endpoint}/v1"
+
     @client = OpenAI::Client.new(
       access_token: api_key,
-      uri_base: endpoint,
+      uri_base: uri_base,
       log_errors: Rails.env.development?
     )
     @model = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || 'gpt-4o'

@@ -2,33 +2,49 @@ module Captain::ChatHelper
   def request_chat_completion
     log_chat_completion_request
 
-    response = @client.chat(
-      parameters: {
-        model: @model,
-        messages: @messages,
-        tools: @tool_registry&.registered_tools || [],
-        response_format: { type: 'json_object' },
-        temperature: @assistant&.config&.[]('temperature').to_f || 1
-      }
-    )
+    chat_params = {
+      model: @model,
+      messages: @messages,
+      temperature: @assistant&.config&.[]('temperature').to_f || 1
+    }
+
+    tools = @tool_registry&.registered_tools
+    chat_params[:tools] = tools if tools.present? && tools.any?
+
+    response = @client.chat(parameters: chat_params)
 
     handle_response(response)
   rescue StandardError => e
-    Rails.logger.error "#{self.class.name} Assistant: #{@assistant.id}, Error in chat completion: #{e}"
-    raise e
+    Rails.logger.error "#{self.class.name} Assistant: #{@assistant&.id}, Error in chat completion: #{e.message}"
+    { 'content' => "AI 响应异常: #{e.message}" }
   end
 
   private
 
   def handle_response(response)
-    Rails.logger.debug { "#{self.class.name} Assistant: #{@assistant.id}, Received response #{response}" }
+    Rails.logger.info { "#{self.class.name} Assistant: #{@assistant&.id}, Received response: #{response}" }
+
+    if response.is_a?(Hash) && response['error'].present?
+      err_msg = response.dig('error', 'message') || response['error'].to_s
+      Rails.logger.error("LLM API Error: #{err_msg}")
+      return { 'content' => "接口返回错误: #{err_msg}" }
+    end
+
     message = response.dig('choices', 0, 'message')
-    if message['tool_calls']
+    return { 'content' => '未能获取到回复内容，请检查模型与接口状态。' } if message.blank?
+
+    if message['tool_calls'].present?
       process_tool_calls(message['tool_calls'])
     else
-      message = JSON.parse(message['content'].strip)
-      persist_message(message, 'assistant')
-      message
+      content_str = message['content'].to_s.strip
+      begin
+        parsed = JSON.parse(content_str)
+        result = parsed.is_a?(Hash) ? parsed : { 'content' => content_str }
+      rescue JSON::ParserError
+        result = { 'content' => content_str }
+      end
+      persist_message(result, 'assistant')
+      result
     end
   end
 

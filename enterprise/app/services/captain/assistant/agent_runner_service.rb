@@ -104,13 +104,32 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def format_response(output)
-    return output.with_indifferent_access if output.is_a?(Hash)
+    if output.is_a?(Hash)
+      res = output['response'] || output[:response] || output['result'] || output[:result] || output['content'] || output[:content] || output.to_s
+      return { 'response' => res, 'content' => res, 'reasoning' => output['reasoning'] || output[:reasoning] }.with_indifferent_access
+    end
 
-    # Fallback for backwards compatibility
+    clean_str = output.to_s.strip
+    clean_str = clean_str.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+
+    begin
+      parsed = JSON.parse(clean_str)
+      if parsed.is_a?(Hash)
+        res = parsed['response'] || parsed['result'] || parsed['content'] || clean_str
+        return { 'response' => res, 'content' => res, 'reasoning' => parsed['reasoning'] }.with_indifferent_access
+      end
+    rescue JSON::ParserError
+      if clean_str =~ /"response"\s*:\s*"((?:[^"\\]|\\.)*)"/m
+        res = $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\\\/, '\\')
+        return { 'response' => res, 'content' => res }.with_indifferent_access
+      end
+    end
+
     {
-      'response' => output.to_s,
+      'response' => clean_str,
+      'content' => clean_str,
       'reasoning' => 'Processed by agent'
-    }
+    }.with_indifferent_access
   end
 
   def error_response(error_message)

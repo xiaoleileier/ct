@@ -70,8 +70,12 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def handoff_requested?
-    resp = @response['response'] || @response[:response] || @response['content'] || @response[:content]
-    resp == 'conversation_handoff'
+    return false if @response.blank?
+
+    resp = @response['response'] || @response[:response] || @response['content'] || @response[:content] || @response.to_s
+    resp_str = resp.to_s.strip
+
+    resp_str == 'conversation_handoff' || resp_str.include?('conversation_handoff')
   end
 
   def process_action(action)
@@ -85,13 +89,26 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def create_handoff_message
-    create_outgoing_message(
-      @assistant.config['handoff_message'].presence || I18n.t('conversations.captain.handoff')
-    )
+    msg = @assistant.config['handoff_message'].presence || I18n.t('conversations.captain.handoff', default: '正在转接人工客服以获得进一步协助。')
+    create_outgoing_message(msg)
   end
 
   def create_messages
     content = @response['response'] || @response[:response] || @response['content'] || @response[:content]
+
+    # Defensive parsing: if content is still a JSON string or markdown block
+    if content.to_s.include?('"response"') || content.to_s.include?('"reasoning"') || content.to_s.start_with?('```')
+      clean_str = content.to_s.gsub(/\A```(?:json)?\s*/i, '').gsub(/\s*```\z/, '').strip
+      begin
+        parsed = JSON.parse(clean_str)
+        content = parsed['response'] || parsed['result'] || parsed['content'] || clean_str if parsed.is_a?(Hash)
+      rescue JSON::ParserError
+        if clean_str =~ /"response"\s*:\s*"((?:[^"\\]|\\.)*)"/m
+          content = $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\\\/, '\\')
+        end
+      end
+    end
+
     agent_name = @response['agent_name'] || @response[:agent_name]
     validate_message_content!(content)
     create_outgoing_message(content, agent_name: agent_name)

@@ -29,7 +29,19 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
       message_history: message_history
     )
 
-    render json: response
+    content = if response.is_a?(Hash)
+                response[:content] || response['content'] || response[:response] || response['response'] || response[:message] || response['message']
+              else
+                response.to_s
+              end
+
+    result = if response.is_a?(Hash)
+               response.merge(response: content, content: content)
+             else
+               { response: content, content: content }
+             end
+
+    render json: result
   end
 
   def tools

@@ -49,8 +49,14 @@ const sendMessage = async () => {
       messageHistory: formatMessagesForApi(),
     });
 
+    const reply =
+      data?.response ??
+      data?.content ??
+      data?.message ??
+      (typeof data === 'string' ? data : '');
+
     messages.value.push({
-      content: data.response,
+      content: reply,
       sender: 'assistant',
       timestamp: new Date().toISOString(),
     });

@@ -39,10 +39,15 @@ module Captain::ChatHelper
       content_str = message['content'].to_s.strip
       begin
         parsed = JSON.parse(content_str)
-        result = parsed.is_a?(Hash) ? parsed : { 'content' => content_str }
+        result = parsed.is_a?(Hash) ? parsed : { 'content' => content_str, 'response' => content_str }
       rescue JSON::ParserError
-        result = { 'content' => content_str }
+        result = { 'content' => content_str, 'response' => content_str }
       end
+
+      reply_text = result['content'] || result['response'] || result['message'] || content_str
+      result['content'] = reply_text
+      result['response'] = reply_text
+
       persist_message(result, 'assistant')
       result
     end

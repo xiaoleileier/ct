@@ -24,9 +24,14 @@ class Captain::Tools::SearchDocumentationService < Captain::Tools::BaseService
     query = arguments['search_query']
     Rails.logger.info { "#{self.class.name}: #{query}" }
 
-    responses = assistant.responses.approved.search(query)
+    responses = begin
+      assistant.responses.approved.search(query)
+    rescue StandardError => e
+      Rails.logger.warn "SearchDocumentationService search error: #{e.message}"
+      []
+    end
 
-    return 'No FAQs found for the given query' if responses.empty?
+    return 'No FAQs found for the given query' if responses.blank?
 
     responses.map { |response| format_response(response) }.join
   end

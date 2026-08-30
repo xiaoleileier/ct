@@ -70,7 +70,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def handoff_requested?
-    @response['response'] == 'conversation_handoff'
+    resp = @response['response'] || @response[:response] || @response['content'] || @response[:content]
+    resp == 'conversation_handoff'
   end
 
   def process_action(action)
@@ -90,8 +91,10 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def create_messages
-    validate_message_content!(@response['response'])
-    create_outgoing_message(@response['response'], agent_name: @response['agent_name'])
+    content = @response['response'] || @response[:response] || @response['content'] || @response[:content]
+    agent_name = @response['agent_name'] || @response[:agent_name]
+    validate_message_content!(content)
+    create_outgoing_message(content, agent_name: agent_name)
   end
 
   def validate_message_content!(content)

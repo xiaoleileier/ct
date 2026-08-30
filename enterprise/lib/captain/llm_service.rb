@@ -2,16 +2,20 @@ require 'openai'
 
 class Captain::LlmService
   def initialize(config)
+    api_key = config[:api_key].presence || InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_API_KEY')&.value
+    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     @client = OpenAI::Client.new(
-      access_token: config[:api_key],
+      access_token: api_key,
+      uri_base: endpoint,
       log_errors: Rails.env.development?
     )
+    @model = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || 'gpt-4o'
     @logger = Rails.logger
   end
 
   def call(messages, functions = [])
     openai_params = {
-      model: 'gpt-4o',
+      model: @model,
       response_format: { type: 'json_object' },
       messages: messages
     }

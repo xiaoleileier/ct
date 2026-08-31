@@ -61,9 +61,17 @@ const statusOptions = computed(() =>
 );
 
 const filteredResponses = computed(() => {
-  return selectedStatus.value === 'pending'
-    ? responses.value.filter(r => r.status === 'pending')
-    : responses.value;
+  if (selectedStatus.value === 'pending') {
+    return responses.value.filter(
+      r => String(r.status) === 'pending' || r.status === 0
+    );
+  }
+  if (selectedStatus.value === 'approved') {
+    return responses.value.filter(
+      r => String(r.status) === 'approved' || r.status === 1
+    );
+  }
+  return responses.value;
 });
 
 const selectedStatusLabel = computed(() => {

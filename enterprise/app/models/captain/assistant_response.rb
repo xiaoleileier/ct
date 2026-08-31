@@ -48,8 +48,20 @@ class Captain::AssistantResponse < ApplicationRecord
     embedding = Captain::Llm::EmbeddingService.new.get_embedding(query)
     return nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5) if embedding.present?
 
-    # Smart multi-term text search fallback (splits English words and Chinese 2-character n-grams)
-    terms = query.to_s.scan(/[a-zA-Z0-9_-]+|[\p{Han}]{2,}/).map(&:strip).reject(&:blank?)
+    # Extract alphanumeric words (e.g. apple, id, dns, clash)
+    words = query.to_s.scan(/[a-zA-Z0-9_-]+/).map(&:strip).reject(&:blank?)
+
+    # Extract Chinese 2-character sliding window bigrams
+    chinese_chars = query.to_s.gsub(/[^\p{Han}]/, '')
+    bigrams = if chinese_chars.length >= 2
+                (0..chinese_chars.length - 2).map { |i| chinese_chars[i, 2] }
+              elsif chinese_chars.length == 1
+                [chinese_chars]
+              else
+                []
+              end
+
+    terms = (words + bigrams).uniq
     terms << query.to_s.strip if terms.empty?
 
     conditions = []

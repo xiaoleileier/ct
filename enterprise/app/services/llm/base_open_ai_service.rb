@@ -5,6 +5,7 @@ class Llm::BaseOpenAiService
     @client = OpenAI::Client.new(
       access_token: InstallationConfig.find_by!(name: 'CAPTAIN_OPEN_AI_API_KEY').value,
       uri_base: uri_base,
+      request_timeout: 180,
       log_errors: Rails.env.development?
     )
     setup_model

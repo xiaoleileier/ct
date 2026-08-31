@@ -16,7 +16,11 @@ module Captain::ChatHelper
     handle_response(response)
   rescue StandardError => e
     Rails.logger.error "#{self.class.name} Assistant: #{@assistant&.id}, Error in chat completion: #{e.message}"
-    { 'content' => "AI 响应异常: #{e.message}" }
+    if e.is_a?(Net::ReadTimeout) || e.message.to_s.include?('Timeout') || e.message.to_s.include?('TCPSocket')
+      { 'content' => '抱歉呀，网络通信暂时有点慢，请您稍等片刻重新发送试试看哦~' }
+    else
+      { 'content' => "AI 响应异常: #{e.message}" }
+    end
   end
 
   private

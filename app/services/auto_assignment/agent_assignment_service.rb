@@ -21,11 +21,13 @@ class AutoAssignment::AgentAssignmentService
   end
 
   def allowed_online_agent_ids
-    # We want to perform roundrobin only over online agents
-    # Hence taking an intersection of online agents and allowed member ids
-
-    # the online user ids are string, since its from redis, allowed member ids are integer, since its from active record
-    @allowed_online_agent_ids ||= online_agent_ids & allowed_agent_ids&.map(&:to_s)
+    # Prefer online agents; fallback to all inbox members if no agents are actively online
+    matched = if online_agent_ids.present?
+                online_agent_ids & allowed_agent_ids&.map(&:to_s)
+              else
+                []
+              end
+    @allowed_online_agent_ids ||= matched.presence || allowed_agent_ids&.map(&:to_s)
   end
 
   def round_robin_manage_service

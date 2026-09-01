@@ -16,10 +16,13 @@ module Captain::ChatHelper
     handle_response(response)
   rescue StandardError => e
     Rails.logger.error "#{self.class.name} Assistant: #{@assistant&.id}, Error in chat completion: #{e.message}"
-    if e.is_a?(Net::ReadTimeout) || e.message.to_s.include?('Timeout') || e.message.to_s.include?('TCPSocket')
+    err_str = e.message.to_s
+    if e.is_a?(Net::ReadTimeout) || err_str.include?('Timeout') || err_str.include?('TCPSocket')
       { 'content' => '抱歉呀，网络通信暂时有点慢，请您稍等片刻重新发送试试看哦~' }
+    elsif err_str.include?('503') || err_str.include?('502') || err_str.include?('500')
+      { 'content' => '抱歉，当前 AI 咨询通道暂时繁忙，请您稍等片刻再次发送，或直接回复“人工”为您转接客服处理。' }
     else
-      { 'content' => "AI 响应异常: #{e.message}" }
+      { 'content' => '抱歉，系统暂时开小差了，您可以稍后重试或回复“人工”联系专属客服为您解决。' }
     end
   end
 

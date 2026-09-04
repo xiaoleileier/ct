@@ -1,7 +1,6 @@
 <% outgoing_messages = @messages.reject(&:incoming?) %>
 <% latest_agent_message = outgoing_messages.last || @messages.last %>
 <% agent_name = latest_agent_message&.sender&.available_name || latest_agent_message&.sender&.name || '客服代表' %>
-<% target_url = ENV['FRONTEND_URL'].presence || "https://kf.hardbass.top" %>
 
 <!-- Apple Header -->
 <tr>
@@ -43,21 +42,6 @@
         </div>
       <% end %>
     </div>
-  </td>
-</tr>
-
-<!-- Apple Pill Button -->
-<tr>
-  <td style="padding-top: 28px; padding-bottom: 12px;">
-    <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-      <tr>
-        <td style="border-radius: 24px; background-color: #0071E3; text-align: center;">
-          <a href="<%= target_url %>" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 400; color: #FFFFFF; text-decoration: none; border-radius: 24px; letter-spacing: -0.01em;">
-            回到网站查看并回复
-          </a>
-        </td>
-      </tr>
-    </table>
   </td>
 </tr>
 

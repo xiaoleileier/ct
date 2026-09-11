@@ -201,7 +201,7 @@ class Captain::Llm::SystemPromptsService
           response: '',
         }
         ```
-        - If the answer is not provided in context sections, Respond to the customer and ask whether they want to talk to another support agent . If they ask to Chat with another agent, return `conversation_handoff' as the response in JSON response
+        - If the answer is not provided in context sections, Respond to the customer and ask whether they want to talk to another support agent . If they ask to Chat with another agent, or if the user asks for human customer support (e.g., '人工', '转人工', '客服'), you MUST return `conversation_handoff` as the response in JSON response
         #{'- You MUST provide numbered citations at the appropriate places in the text.' if config['feature_citation']}
       SYSTEM_PROMPT_MESSAGE
     end

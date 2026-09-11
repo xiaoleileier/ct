@@ -70,12 +70,21 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def handoff_requested?
+    # 1. User intent: if the latest user message requests human assistance
+    last_user_message = @conversation.messages.where(message_type: :incoming).last&.content.to_s.strip
+    if last_user_message.present? && last_user_message.length <= 20
+      return true if last_user_message =~ /(?:人工|真人|转人工|找客服|转客服)/i
+    end
+
     return false if @response.blank?
 
     resp = @response['response'] || @response[:response] || @response['content'] || @response[:content] || @response.to_s
     resp_str = resp.to_s.strip
 
-    resp_str == 'conversation_handoff' || resp_str.include?('conversation_handoff')
+    # 2. Model intent: covers standard token and any LLM (DeepSeek, GPT-4o, Claude, Qwen, GLM, etc.) natural language handoff replies
+    resp_str == 'conversation_handoff' ||
+      resp_str.include?('conversation_handoff') ||
+      resp_str =~ /(?:转接人工|转人工|为您转接|转给人工|排队等待中|专属客服|联系人工|转交人工|切换人工|接入人工|客服代表为您)/i
   end
 
   def process_action(action)
@@ -89,7 +98,16 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def create_handoff_message
-    msg = @assistant.config['handoff_message'].presence || I18n.t('conversations.captain.handoff', default: '正在转接人工客服以获得进一步协助。')
+    custom_msg = nil
+    if @response.present?
+      resp = @response['response'] || @response[:response] || @response['content'] || @response[:content] || @response.to_s
+      resp_str = resp.to_s.strip
+      if resp_str != 'conversation_handoff' && !resp_str.include?('conversation_handoff') && resp_str.present? && !resp_str.include?('"response"')
+        custom_msg = resp_str
+      end
+    end
+
+    msg = @assistant.config['handoff_message'].presence || custom_msg || I18n.t('conversations.captain.handoff', default: '正在转接人工客服以获得进一步协助。')
     create_outgoing_message(msg)
   end
 

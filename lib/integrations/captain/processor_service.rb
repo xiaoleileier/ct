@@ -8,7 +8,18 @@ class Integrations::Captain::ProcessorService < Integrations::BotProcessorServic
   end
 
   def process_response(message, response)
-    if response == 'conversation_handoff'
+    msg_content = message.content.to_s.strip
+    resp_content = response.to_s.strip
+
+    user_requested = msg_content.present? && msg_content.length <= 20 && msg_content =~ /(?:人工|真人|转人工|找客服|转客服)/i
+    model_handoff = resp_content == 'conversation_handoff' ||
+                    resp_content.include?('conversation_handoff') ||
+                    resp_content =~ /(?:转接人工|转人工|为您转接|转给人工|排队等待中|专属客服|联系人工|转交人工|切换人工|接入人工|客服代表为您)/i
+
+    if user_requested || model_handoff
+      if resp_content.present? && resp_content != 'conversation_handoff' && !resp_content.include?('conversation_handoff')
+        create_conversation(message, { content: response })
+      end
       message.conversation.bot_handoff!
     else
       create_conversation(message, { content: response })

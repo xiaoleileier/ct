@@ -119,6 +119,13 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     update_last_seen_on_conversation(last_seen_at, true)
   end
 
+  def translate_text
+    text = params[:text].to_s
+    target_lang = params[:target_language] || 'en'
+    translated = ::Messages::TranslationService.translate_raw_text(text, target_lang)
+    render json: { translated_text: translated }
+  end
+
   def custom_attributes
     @conversation.custom_attributes = params.permit(custom_attributes: {})[:custom_attributes]
     @conversation.save!

@@ -120,13 +120,14 @@ class ActionCableConnector extends BaseActionCableConnector {
     this.fetchConversationStats();
   };
 
-  onTypingOn = ({ conversation, user }) => {
+  onTypingOn = ({ conversation, user, typing_text: typingText }) => {
     const conversationId = conversation.id;
 
     this.clearTimer(conversationId);
     this.app.$store.dispatch('conversationTypingStatus/create', {
       conversationId,
       user,
+      typingText,
     });
     this.initTimer({ conversation, user });
   };

@@ -39,14 +39,15 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   def translate
     return head :ok if already_translated_content_available?
 
-    translated_content = Integrations::GoogleTranslate::ProcessorService.new(
+    target_lang = permitted_params[:target_language] || 'zh-CN'
+    translated_content = Messages::TranslationService.new(
       message: message,
-      target_language: permitted_params[:target_language]
+      target_language: target_lang
     ).perform
 
     if translated_content.present?
       translations = {}
-      translations[permitted_params[:target_language]] = translated_content
+      translations[target_lang] = translated_content
       translations = message.translations.merge!(translations) if message.translations.present?
       message.update!(translations: translations)
     end

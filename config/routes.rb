@@ -138,6 +138,7 @@ Rails.application.routes.draw do
               post :toggle_typing_status
               post :update_last_seen
               post :unread
+              post :translate_text
               post :custom_attributes
               get :attachments
               get :inbox_assistant

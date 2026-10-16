@@ -122,6 +122,12 @@ export default {
       ](this.currentChat.id);
       return userList;
     },
+    typingPreviewText() {
+      const userWithText = this.typingUsersList.find(
+        user => user.typingText && user.typingText.trim()
+      );
+      return userWithText ? userWithText.typingText : null;
+    },
     isAnyoneTyping() {
       const userList = this.typingUsersList;
       return userList.length !== 0;
@@ -516,6 +522,24 @@ export default {
         class="absolute flex items-center w-full h-0 -top-7"
       >
         <div
+          v-if="typingPreviewText"
+          class="flex items-center gap-1.5 py-1 px-3.5 shadow-lg rounded-full bg-amber-50/95 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 text-xs my-2.5 mx-auto max-w-[85%] backdrop-blur-xs"
+        >
+          <span class="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">
+            <span class="i-lucide-eye size-3.5" />
+            访客正在输入:
+          </span>
+          <span class="truncate italic max-w-xs sm:max-w-md font-medium">
+            "{{ typingPreviewText }}"
+          </span>
+          <img
+            class="w-5 flex-shrink-0 ltr:ml-1 rtl:mr-1"
+            src="assets/images/typing.gif"
+            alt="Someone is typing"
+          />
+        </div>
+        <div
+          v-else
           class="flex py-2 pr-4 pl-5 shadow-md rounded-full bg-white dark:bg-n-solid-3 text-n-slate-11 text-xs font-semibold my-2.5 mx-auto"
         >
           {{ typingUserNames }}

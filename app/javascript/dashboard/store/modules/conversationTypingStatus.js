@@ -18,10 +18,11 @@ export const actions = {
       // Handle error
     }
   },
-  create: ({ commit }, { conversationId, user }) => {
+  create: ({ commit }, { conversationId, user, typingText }) => {
     commit(types.default.ADD_USER_TYPING_TO_CONVERSATION, {
       conversationId,
       user,
+      typingText,
     });
   },
   destroy: ({ commit }, { conversationId, user }) => {
@@ -35,18 +36,17 @@ export const actions = {
 export const mutations = {
   [types.default.ADD_USER_TYPING_TO_CONVERSATION]: (
     $state,
-    { conversationId, user }
+    { conversationId, user, typingText }
   ) => {
     const records = $state.records[conversationId] || [];
-    const hasUserRecordAlready = !!records.filter(
-      record => record.id === user.id && record.type === user.type
-    ).length;
-    if (!hasUserRecordAlready) {
-      $state.records = {
-        ...$state.records,
-        [conversationId]: [...records, user],
-      };
-    }
+    const userWithText = { ...user, typingText };
+    const filteredRecords = records.filter(
+      record => record.id !== user.id || record.type !== user.type
+    );
+    $state.records = {
+      ...$state.records,
+      [conversationId]: [...filteredRecords, userWithText],
+    };
   },
   [types.default.REMOVE_USER_TYPING_FROM_CONVERSATION]: (
     $state,

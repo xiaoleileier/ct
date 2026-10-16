@@ -175,6 +175,7 @@ export default {
   data() {
     return {
       ALLOWED_FILE_TYPES,
+      isTranslatingInput: false,
     };
   },
   computed: {
@@ -284,6 +285,28 @@ export default {
     toggleInsertArticle() {
       this.$emit('toggleInsertArticle');
     },
+    async translateInput() {
+      if (!this.message || !this.message.trim()) return;
+      this.isTranslatingInput = true;
+      try {
+        const isChinese = /[\u4e00-\u9fa5]/.test(this.message);
+        const targetLang = isChinese ? 'en' : 'zh-CN';
+        const res = await window.axios.post(
+          `/api/v1/accounts/${this.accountId}/conversations/${this.conversationId}/translate_text`,
+          {
+            text: this.message,
+            target_language: targetLang,
+          }
+        );
+        if (res.data?.translated_text) {
+          this.replaceText(res.data.translated_text);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        this.isTranslatingInput = false;
+      }
+    },
   },
 };
 </script>
@@ -300,6 +323,19 @@ export default {
         @click="toggleEmojiPicker"
       />
       <CannedResponsesPicker @select="replaceText" />
+      <NextButton
+        v-tooltip.top-end="'双向一键翻译 (中文 ⇄ 英文)'"
+        :icon="
+          isTranslatingInput
+            ? 'i-lucide-loader-2 animate-spin'
+            : 'i-lucide-languages'
+        "
+        slate
+        faded
+        sm
+        :disabled="isTranslatingInput"
+        @click="translateInput"
+      />
       <FileUpload
         ref="uploadRef"
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')"

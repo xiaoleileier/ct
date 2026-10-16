@@ -79,6 +79,22 @@ const unreadCount = computed(() => props.chat.unread_count);
 
 const hasUnread = computed(() => unreadCount.value > 0);
 
+const waitingSince = computed(() => props.chat.waiting_since);
+const waitingMinutes = computed(() => {
+  if (!waitingSince.value) return 0;
+  const now = Math.floor(Date.now() / 1000);
+  const diffSeconds = Math.max(0, now - Number(waitingSince.value));
+  return Math.floor(diffSeconds / 60);
+});
+
+const isTimeoutWarning = computed(() => {
+  return waitingMinutes.value >= 1;
+});
+
+const isSevereTimeout = computed(() => {
+  return waitingMinutes.value >= 3;
+});
+
 const isInboxNameVisible = computed(() => !activeInbox.value);
 
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
@@ -244,6 +260,8 @@ const deleteConversation = () => {
       'active animate-card-select bg-n-alpha-1 dark:bg-n-alpha-3 border-n-weak':
         isActiveChat,
       'bg-n-slate-2 dark:bg-n-slate-3': selected,
+      '!border-l-2 !border-l-red-500 bg-red-50/10 dark:bg-red-950/10':
+        isSevereTimeout,
       'px-0': compact,
       'px-3': !compact,
     }"
@@ -368,6 +386,18 @@ const deleteConversation = () => {
           :class="hasUnread ? 'block' : 'hidden'"
         >
           {{ unreadCount > 9 ? '9+' : unreadCount }}
+        </span>
+        <span
+          v-if="isTimeoutWarning"
+          class="mt-1 ltr:ml-auto rtl:mr-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs whitespace-nowrap"
+          :class="{
+            'bg-red-500 text-white animate-pulse shadow-red-500/50': isSevereTimeout,
+            'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': !isSevereTimeout,
+          }"
+          :title="`客户已等待 ${waitingMinutes} 分钟未回复`"
+        >
+          <span class="i-lucide-alarm-clock size-2.5" />
+          {{ isSevereTimeout ? `超时 ${waitingMinutes}m` : `${waitingMinutes}m未回` }}
         </span>
       </div>
       <CardLabels

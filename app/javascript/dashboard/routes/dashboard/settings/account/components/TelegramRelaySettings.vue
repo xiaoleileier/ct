@@ -5,7 +5,6 @@ import axios from 'axios';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useAlert } from 'dashboard/composables';
 import SectionLayout from './SectionLayout.vue';
-import WithLabel from 'v3/components/Form/WithLabel.vue';
 import NextInput from 'next/input/Input.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Switch from 'next/switch/Switch.vue';
@@ -177,25 +176,27 @@ const handleTestConnection = async (silent = false) => {
 
       <!-- Settings Form -->
       <form class="grid gap-4" @submit.prevent="handleSave">
-        <WithLabel
-          :label="t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.LABEL')"
-        >
+        <div>
+          <label class="block mb-1.5 text-sm font-medium text-n-slate-12">
+            {{ t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.LABEL') }}
+          </label>
           <NextInput
             v-model="botToken"
-            type="password"
+            type="text"
             class="w-full font-mono text-sm"
             :placeholder="
               t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.PLACEHOLDER')
             "
           />
-          <template #help>
+          <p class="text-xs text-n-slate-10 mt-1.5 leading-normal">
             {{ t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.HELP') }}
-          </template>
-        </WithLabel>
+          </p>
+        </div>
 
-        <WithLabel
-          :label="t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.LABEL')"
-        >
+        <div>
+          <label class="block mb-1.5 text-sm font-medium text-n-slate-12">
+            {{ t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.LABEL') }}
+          </label>
           <NextInput
             v-model="groupId"
             type="text"
@@ -204,10 +205,10 @@ const handleTestConnection = async (silent = false) => {
               t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.PLACEHOLDER')
             "
           />
-          <template #help>
+          <p class="text-xs text-n-slate-10 mt-1.5 leading-normal">
             {{ t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.HELP') }}
-          </template>
-        </WithLabel>
+          </p>
+        </div>
 
         <!-- Status Details if Checked -->
         <div

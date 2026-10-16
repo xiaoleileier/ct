@@ -309,7 +309,7 @@ class Message < ApplicationRecord
   end
 
   def relay_to_telegram_forum
-    ::Telegram::ForumRelayJob.perform_later(id) if ::Telegram::ForumRelayService.configured?
+    ::Telegram::ForumRelayJob.perform_later(id) if ::Telegram::ForumRelayService.configured?(account)
   end
 
   def update_contact_activity

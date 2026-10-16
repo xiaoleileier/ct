@@ -213,40 +213,137 @@ const handleTestConnection = async (silent = false) => {
         <!-- Status Details if Checked -->
         <div
           v-if="statusResult"
-          class="p-3 rounded-lg border text-xs"
+          class="p-4 rounded-xl border text-xs space-y-2.5 transition-all"
           :class="
             statusResult.ok
-              ? 'bg-n-teal-2/30 border-n-teal-6 text-n-teal-12'
+              ? 'bg-n-alpha-1 dark:bg-n-solid-2 border-n-teal-6 text-n-slate-12'
               : 'bg-n-ruby-2/30 border-n-ruby-6 text-n-ruby-12'
           "
         >
-          <div v-if="statusResult.ok" class="space-y-1">
-            <div class="font-medium flex items-center gap-1.5">
-              <span>✅</span>
+          <div v-if="statusResult.ok" class="space-y-2">
+            <div
+              class="font-medium text-sm text-n-teal-11 flex items-center gap-1.5 pb-1 border-b border-n-weak"
+            >
+              <span>🩺</span>
+              <span>Telegram 机器人体检报告 (Diagnostic Report)</span>
+            </div>
+
+            <!-- Bot Status -->
+            <div class="flex items-center gap-2">
+              <span class="text-n-teal-11">✅</span>
               <span>
-                {{
-                  t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.STATUS_CONNECTED', {
-                    botName: statusResult.bot?.username || statusResult.bot?.first_name,
-                  })
-                }}
+                机器人账号：
+                <b class="text-n-slate-12">@{{ statusResult.bot?.username }}</b>
+                <span class="text-n-slate-10 text-[11px] ml-1">({{ statusResult.bot?.first_name }})</span>
               </span>
             </div>
-            <div class="text-n-slate-11">
-              <span>Webhook: </span>
-              <code class="text-xs break-all">{{
-                statusResult.webhook?.url || '未注册'
-              }}</code>
+
+            <!-- Webhook Status -->
+            <div class="flex items-start gap-2">
+              <span
+                :class="
+                  statusResult.webhook?.url ? 'text-n-teal-11' : 'text-n-ruby-11'
+                "
+              >
+                {{ statusResult.webhook?.url ? '✅' : '⚠️' }}
+              </span>
+              <div class="flex-1">
+                <span>Webhook 回调地址：</span>
+                <code
+                  v-if="statusResult.webhook?.url"
+                  class="text-xs break-all text-n-blue-11 block mt-0.5"
+                >
+                  {{ statusResult.webhook?.url }}
+                </code>
+                <span v-else class="text-n-ruby-11 font-medium block mt-0.5">
+                  未注册！请点击下方的「一键激活 Webhook」按钮进行激活。
+                </span>
+                <div
+                  v-if="statusResult.webhook?.last_error_message"
+                  class="text-n-ruby-11 mt-1 font-medium"
+                >
+                  ⚠️ 异常提示: {{ statusResult.webhook.last_error_message }}
+                </div>
+              </div>
             </div>
+
+            <!-- Group Status -->
             <div
-              v-if="statusResult.webhook?.last_error_message"
-              class="text-n-ruby-11 mt-1"
+              v-if="statusResult.group"
+              class="pt-1 space-y-1.5 border-t border-n-weak"
             >
-              ⚠️ Telegram 报告错误: {{ statusResult.webhook.last_error_message }}
+              <div v-if="statusResult.group.valid" class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-n-teal-11">✅</span>
+                  <span>
+                    已连接群组：<b class="text-n-slate-12">「{{ statusResult.group.title }}」</b>
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span
+                    :class="
+                      statusResult.group.is_forum
+                        ? 'text-n-teal-11'
+                        : 'text-n-ruby-11'
+                    "
+                  >
+                    {{ statusResult.group.is_forum ? '✅' : '❌' }}
+                  </span>
+                  <span
+                    v-if="statusResult.group.is_forum"
+                    class="text-n-slate-12"
+                  >
+                    Topics 话题功能已开启 (Forum Supergroup)
+                  </span>
+                  <span v-else class="text-n-ruby-11 font-medium">
+                    群组尚未开启话题！请点击群设置 ➔ 开启「Topics 话题功能」。
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span
+                    :class="
+                      statusResult.group.bot_is_admin &&
+                      statusResult.group.can_manage_topics
+                        ? 'text-n-teal-11'
+                        : 'text-n-ruby-11'
+                    "
+                  >
+                    {{
+                      statusResult.group.bot_is_admin &&
+                      statusResult.group.can_manage_topics
+                        ? '✅'
+                        : '❌'
+                    }}
+                  </span>
+                  <span
+                    v-if="
+                      statusResult.group.bot_is_admin &&
+                      statusResult.group.can_manage_topics
+                    "
+                    class="text-n-slate-12"
+                  >
+                    机器人管理员权限已就绪 (包含 Manage Topics 话题管理权限)
+                  </span>
+                  <span v-else class="text-n-ruby-11 font-medium">
+                    机器人权限不足！请在群管理中将机器人设为管理员并勾选「Manage Topics」。
+                  </span>
+                </div>
+              </div>
+
+              <div v-else class="flex items-center gap-2 text-n-ruby-11">
+                <span>❌</span>
+                <span>
+                  无法访问群组 ({{ statusResult.group.error }})。请确保已将机器人拉入群组，且群组 ID 填写正确（以 -100 开头）。
+                </span>
+              </div>
             </div>
           </div>
-          <div v-else class="flex items-center gap-1.5">
+
+          <div v-else class="flex items-center gap-2">
             <span>❌</span>
-            <span>{{ statusResult.error || '连接失败' }}</span>
+            <span class="font-medium">{{ statusResult.error || '连接失败，请检查 Bot Token 是否正确' }}</span>
           </div>
         </div>
 

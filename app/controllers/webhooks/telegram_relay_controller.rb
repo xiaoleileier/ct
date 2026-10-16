@@ -56,14 +56,44 @@ class Webhooks::TelegramRelayController < ActionController::API
     return render json: { configured: false, error: '尚未配置 Telegram 机器人 Token' } if bot_token.blank?
 
     bot_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMe")
-    webhook_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getWebhookInfo")
+    return render json: { configured: false, ok: false, error: "Bot Token 无效: #{bot_res.parsed_response['description']}" } unless bot_res.parsed_response['ok']
+
+    bot_info = bot_res.parsed_response['result']
+    webhook_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getWebhookInfo").parsed_response['result']
+
+    group_check = {}
+    if group_id.present?
+      chat_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getChat?chat_id=#{group_id}").parsed_response
+      if chat_res['ok']
+        chat = chat_res['result']
+        member_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getChatMember?chat_id=#{group_id}&user_id=#{bot_info['id']}").parsed_response
+
+        member = member_res['result'] if member_res['ok']
+        status = member&.[]('status')
+
+        group_check = {
+          valid: true,
+          title: chat['title'],
+          type: chat['type'],
+          is_forum: chat['is_forum'] == true,
+          bot_is_admin: %w[administrator creator].include?(status),
+          can_manage_topics: member&.[]('can_manage_topics') == true || status == 'creator'
+        }
+      else
+        group_check = {
+          valid: false,
+          error: chat_res['description']
+        }
+      end
+    end
 
     render json: {
       configured: true,
-      ok: bot_res.parsed_response['ok'] == true,
-      bot: bot_res.parsed_response['result'],
-      webhook: webhook_res.parsed_response['result'],
-      group_id: group_id
+      ok: true,
+      bot: bot_info,
+      webhook: webhook_res,
+      group_id: group_id,
+      group: group_check
     }
   rescue StandardError => e
     render json: { configured: false, error: e.message }, status: :unprocessable_entity
@@ -76,24 +106,42 @@ class Webhooks::TelegramRelayController < ActionController::API
     photo_array = msg[:photo]
     document = msg[:document]
     sticker = msg[:sticker]
+    voice = msg[:voice]
+    audio = msg[:audio]
+    video = msg[:video]
+    location = msg[:location]
 
     if sticker.present? && text.blank?
-      text = sticker[:emoji] || '[贴纸表情]'
+      text = sticker[:emoji].presence || '[贴纸表情]'
+    elsif location.present? && text.blank?
+      text = "📍 位置: 纬度 #{location[:latitude]}, 经度 #{location[:longitude]}"
     end
 
-    agent = conversation.account.users.first
+    agent = conversation.assignee || conversation.account.users.first
+
+    default_content = if photo_array.present?
+                        '[图片]'
+                      elsif voice.present? || audio.present?
+                        '[语音消息]'
+                      elsif video.present?
+                        '[视频]'
+                      elsif document.present?
+                        '[附件]'
+                      end
 
     message = conversation.messages.build(
       account: conversation.account,
       inbox: conversation.inbox,
       message_type: :outgoing,
-      content: text.presence || (photo_array.present? ? '[图片]' : '[附件]'),
+      content: text.presence || default_content,
       sender: agent,
       source_id: "telegram_#{msg[:message_id]}"
     )
 
     attach_photo(message, photo_array) if photo_array.present?
     attach_document(message, document) if document.present?
+    attach_voice(message, voice || audio) if (voice || audio).present?
+    attach_video(message, video) if video.present?
 
     message.save!
   end
@@ -111,6 +159,18 @@ class Webhooks::TelegramRelayController < ActionController::API
     download_and_attach(message, document[:file_id], :file, document[:file_name])
   end
 
+  def attach_voice(message, voice_obj)
+    return unless voice_obj
+
+    download_and_attach(message, voice_obj[:file_id], :audio, "voice_#{voice_obj[:file_id]}.ogg")
+  end
+
+  def attach_video(message, video_obj)
+    return unless video_obj
+
+    download_and_attach(message, video_obj[:file_id], :video, video_obj[:file_name] || "video_#{video_obj[:file_id]}.mp4")
+  end
+
   def download_and_attach(message, file_id, file_type, custom_filename = nil)
     bot_token = Telegram::ForumRelayService.bot_token(message.account)
     file_info = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getFile?file_id=#{file_id}")
@@ -122,8 +182,8 @@ class Webhooks::TelegramRelayController < ActionController::API
     download_url = "https://api.telegram.org/file/bot#{bot_token}/#{file_path}"
     downloaded_file = Down.download(download_url)
 
-    filename = custom_filename || downloaded_file.original_filename || "telegram_#{file_id}.jpg"
-    content_type = downloaded_file.content_type || 'image/jpeg'
+    filename = custom_filename || downloaded_file.original_filename || "telegram_#{file_id}"
+    content_type = downloaded_file.content_type || 'application/octet-stream'
 
     message.attachments.new(
       account_id: message.account_id,

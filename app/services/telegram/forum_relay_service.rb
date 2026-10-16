@@ -69,6 +69,12 @@ class Telegram::ForumRelayService
         chat_id: gid,
         message_thread_id: topic_id
       })
+      HTTParty.post(api_url('sendMessage', account), body: {
+        chat_id: gid,
+        message_thread_id: topic_id,
+        text: '🔄 <b>该会话已被客服在后台重新打开 (Reopened)</b>',
+        parse_mode: 'HTML'
+      })
     end
   rescue StandardError => e
     Rails.logger.warn "Telegram Forum Relay status change failed: #{e.message}"
@@ -123,8 +129,11 @@ class Telegram::ForumRelayService
   end
 
   def send_initial_profile_card(topic_id)
-    frontend_url = ENV.fetch('FRONTEND_URL', 'http://localhost:3000')
+    frontend_url = ENV['FRONTEND_URL'].presence || 'http://localhost:3000'
     conv_url = "#{frontend_url}/app/accounts/#{account.id}/conversations/#{conversation.display_id}"
+
+    location = [contact.additional_attributes&.dig('city'), contact.additional_attributes&.dig('country_name')].compact.join(', ')
+    location_line = location.present? ? "🌍 <b>地理位置</b>: #{CGI.escapeHTML(location)}\n" : ''
 
     card_text = <<~HTML
       🎉 <b>新客户咨询发起 (会话 ##{conversation.display_id})</b>
@@ -132,7 +141,7 @@ class Telegram::ForumRelayService
       👤 <b>客户姓名</b>: #{CGI.escapeHTML(contact.name.presence || '新访客')}
       📱 <b>联系电话</b>: #{contact.phone_number.presence || '未留'}
       📧 <b>电子邮箱</b>: #{contact.email.presence || '未留'}
-      🌐 <b>来源页面</b>: #{CGI.escapeHTML(conversation.additional_attributes['referer'].to_s.presence || '直接访问')}
+      #{location_line}🌐 <b>来源页面</b>: #{CGI.escapeHTML(conversation.additional_attributes['referer'].to_s.presence || '直接访问')}
       📥 <b>接入渠道</b>: #{CGI.escapeHTML(inbox.name)}
       🔗 <a href="#{conv_url}">点击在客服后台打开此会话</a>
       ━━━━━━━━━━━━━━━━━━━━
@@ -152,7 +161,8 @@ class Telegram::ForumRelayService
     sender_prefix = if message.incoming?
                       "💬 <b>客户</b>:\n"
                     else
-                      "🧑‍💼 <b>客服 [后台]</b>:\n"
+                      sender_name = message.sender&.name.presence || '客服'
+                      "🧑‍💼 <b>#{CGI.escapeHTML(sender_name)} [后台]</b>:\n"
                     end
 
     if message.content.present?
@@ -170,24 +180,38 @@ class Telegram::ForumRelayService
 
   def relay_attachments(topic_id)
     message.attachments.each do |att|
-      url = att.download_url
-      next if url.blank?
-
       if att.image?
-        HTTParty.post(self.class.api_url('sendPhoto', account), body: {
-          chat_id: self.class.group_id(account),
-          message_thread_id: topic_id,
-          photo: url
-        })
+        send_telegram_file('sendPhoto', :photo, att, topic_id)
+      elsif att.audio?
+        send_telegram_file('sendVoice', :voice, att, topic_id)
+      elsif att.video?
+        send_telegram_file('sendVideo', :video, att, topic_id)
       else
-        HTTParty.post(self.class.api_url('sendDocument', account), body: {
-          chat_id: self.class.group_id(account),
+        send_telegram_file('sendDocument', :document, att, topic_id)
+      end
+    end
+  end
+
+  def send_telegram_file(action, field, att, topic_id)
+    gid = self.class.group_id(account)
+    url = self.class.api_url(action, account)
+
+    if att.file.attached?
+      att.file.open do |tempfile|
+        HTTParty.post(url, body: {
+          chat_id: gid,
           message_thread_id: topic_id,
-          document: url
+          field => File.open(tempfile.path)
         })
       end
-    rescue StandardError => e
-      Rails.logger.warn "Failed to send attachment to Telegram: #{e.message}"
+    elsif att.download_url.present?
+      HTTParty.post(url, body: {
+        chat_id: gid,
+        message_thread_id: topic_id,
+        field => att.download_url
+      })
     end
+  rescue StandardError => e
+    Rails.logger.warn "Failed to send #{field} to Telegram: #{e.message}"
   end
 end

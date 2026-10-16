@@ -13,10 +13,17 @@ import AIAssistanceButton from '../AIAssistanceButton.vue';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import CannedResponsesPicker from './CannedResponsesPicker.vue';
 
 export default {
   name: 'ReplyBottomPanel',
-  components: { NextButton, FileUpload, VideoCallButton, AIAssistanceButton },
+  components: {
+    NextButton,
+    FileUpload,
+    VideoCallButton,
+    AIAssistanceButton,
+    CannedResponsesPicker,
+  },
   mixins: [inboxMixin],
   props: {
     isNote: {
@@ -292,6 +299,7 @@ export default {
         sm
         @click="toggleEmojiPicker"
       />
+      <CannedResponsesPicker @select="replaceText" />
       <FileUpload
         ref="uploadRef"
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')"

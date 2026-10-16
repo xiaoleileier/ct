@@ -6,6 +6,7 @@ class MessageTemplates::HookExecutionService
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 
+    ::Messages::LeadCaptureService.new(message: message).perform
     trigger_templates
   end
 

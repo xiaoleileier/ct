@@ -223,7 +223,7 @@ const tableHeaders = computed(() => {
 
     <woot-modal
       v-model:show="showAddPopup"
-      size="medium"
+      size="large"
       :on-close="hideAddPopup"
     >
       <AddAutomationRule
@@ -246,7 +246,7 @@ const tableHeaders = computed(() => {
 
     <woot-modal
       v-model:show="showEditPopup"
-      size="medium"
+      size="large"
       :on-close="hideEditPopup"
     >
       <EditAutomationRule

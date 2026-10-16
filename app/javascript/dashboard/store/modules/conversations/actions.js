@@ -235,7 +235,7 @@ const actions = {
   },
 
   toggleStatus: async (
-    { commit },
+    { commit, dispatch },
     { conversationId, status, snoozedUntil = null }
   ) => {
     try {
@@ -256,6 +256,14 @@ const actions = {
         status: updatedStatus,
         snoozedUntil: updatedSnoozedUntil,
       });
+      dispatch(
+        'notifications/updateConversationStatus',
+        {
+          id: conversationId,
+          status: updatedStatus,
+        },
+        { root: true }
+      );
     } catch (error) {
       // Handle error
     }

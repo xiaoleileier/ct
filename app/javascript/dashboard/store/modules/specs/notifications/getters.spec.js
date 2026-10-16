@@ -44,6 +44,29 @@ describe('#getters', () => {
     ]);
   });
 
+  it('filters out read and snoozed notifications when type is not read and status is not snoozed', () => {
+    const state = {
+      records: {
+        1: { id: 1, primary_actor_id: 101, read_at: '2024-02-07T11:42:39.988Z', snoozed_until: null },
+        2: { id: 2, primary_actor_id: 102, read_at: null, snoozed_until: null },
+        3: {
+          id: 3,
+          primary_actor_id: 103,
+          read_at: '2024-02-07T11:42:39.988Z',
+          snoozed_until: '2099-02-07T11:42:39.988Z',
+        },
+      },
+    };
+    const filters = {
+      type: '',
+      status: '',
+      sortOrder: 'desc',
+    };
+    expect(getters.getFilteredNotifications(state)(filters)).toEqual([
+      { id: 2, primary_actor_id: 102, read_at: null, snoozed_until: null },
+    ]);
+  });
+
   it('getNotificationById', () => {
     const state = {
       records: {

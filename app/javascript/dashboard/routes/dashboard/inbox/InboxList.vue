@@ -44,6 +44,7 @@ const inboxFilters = computed(() => ({
   status: status.value,
   type: type.value,
   sortOrder: sortOrder.value,
+  currentConversationId: currentConversationId.value,
 }));
 
 const notifications = computed(() => {

@@ -104,4 +104,20 @@ export const mutations = {
       ...filters,
     };
   },
+  [types.UPDATE_NOTIFICATION_CONVERSATION_STATUS]: ($state, { id, status }) => {
+    Object.values($state.records).forEach(record => {
+      const actorId = record.primary_actor_id || record.primary_actor?.id;
+      if (Number(actorId) === Number(id)) {
+        if (record.primary_actor) {
+          record.primary_actor.status = status;
+        }
+        if (status === 'resolved' && !record.read_at) {
+          record.read_at = new Date().toISOString();
+          if ($state.meta.unreadCount > 0) {
+            $state.meta.unreadCount -= 1;
+          }
+        }
+      }
+    });
+  },
 };

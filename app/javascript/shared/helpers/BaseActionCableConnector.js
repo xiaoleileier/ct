@@ -22,6 +22,13 @@ class BaseActionCableConnector {
           this.perform('update_presence');
         },
         received: this.onReceived,
+        connected: () => {
+          if (BaseActionCableConnector.isDisconnected) {
+            this.clearReconnectTimer();
+            this.onReconnect();
+            BaseActionCableConnector.isDisconnected = false;
+          }
+        },
         disconnected: () => {
           BaseActionCableConnector.isDisconnected = true;
           this.onDisconnected();

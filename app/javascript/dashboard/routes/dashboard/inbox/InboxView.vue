@@ -31,16 +31,19 @@ const meta = useMapGetter('notifications/getMeta');
 const inboxId = computed(() => Number(route.params.inboxId));
 const conversationId = computed(() => Number(route.params.id));
 
-const activeSortOrder = computed(() => {
+const activeFilters = computed(() => {
   const { inbox_filter_by: filterBy = {} } = uiSettings.value;
-  const { sort_by: sortBy } = filterBy;
-  return sortBy || 'desc';
+  const { sort_by: sortBy, status, type } = filterBy;
+  return {
+    sortOrder: sortBy || 'desc',
+    status: status || '',
+    type: type || '',
+    currentConversationId: conversationId.value,
+  };
 });
 
 const notifications = computed(() => {
-  return notification.value({
-    sortOrder: activeSortOrder.value,
-  });
+  return notification.value(activeFilters.value);
 });
 
 const activeNotification = computed(() => {

@@ -210,6 +210,7 @@ class Conversation < ApplicationRecord
 
     # rubocop:disable Rails/SkipsModelValidations
     update_column(:waiting_since, nil)
+    notifications.where(read_at: nil).update_all(read_at: DateTime.now.utc)
     # rubocop:enable Rails/SkipsModelValidations
   end
 

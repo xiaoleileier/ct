@@ -23,6 +23,8 @@ const isDisconnected = ref(false);
 const isReconnecting = ref(false);
 const isReconnected = ref(false);
 let reconnectTimeout = null;
+let disconnectTimer = null;
+const DISCONNECT_DEBOUNCE_TIME = 3000;
 
 const bannerText = computed(() => {
   if (isReconnecting.value) return t('NETWORK.NOTIFICATION.RECONNECTING');
@@ -42,6 +44,12 @@ const refreshPage = () => {
 const closeNotification = () => {
   showNotification.value = false;
   isReconnected.value = false;
+  isDisconnected.value = false;
+  isReconnecting.value = false;
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
   clearTimeout(reconnectTimeout);
 };
 
@@ -55,22 +63,36 @@ const isInAnyOfTheRoutes = routeName => {
 
 const updateWebsocketStatus = () => {
   isDisconnected.value = true;
-  showNotification.value = true;
+  if (!disconnectTimer) {
+    disconnectTimer = setTimeout(() => {
+      if (isDisconnected.value) {
+        showNotification.value = true;
+      }
+    }, DISCONNECT_DEBOUNCE_TIME);
+  }
 };
 
 const handleReconnectionCompleted = () => {
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
   isDisconnected.value = false;
   isReconnecting.value = false;
-  isReconnected.value = true;
-  showNotification.value = true;
-  reconnectTimeout = setTimeout(closeNotification, RECONNECTED_BANNER_TIMEOUT);
+  if (showNotification.value) {
+    isReconnected.value = true;
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = setTimeout(closeNotification, RECONNECTED_BANNER_TIMEOUT);
+  }
 };
 
 const handleReconnecting = () => {
   if (isInAnyOfTheRoutes(route.name)) {
     isReconnecting.value = true;
     isReconnected.value = false;
-    showNotification.value = true;
+    if (showNotification.value) {
+      showNotification.value = true;
+    }
   } else {
     handleReconnectionCompleted();
   }
@@ -101,9 +123,18 @@ useEmitter(
   handleReconnectionCompleted
 );
 useEmitter(BUS_EVENTS.WEBSOCKET_RECONNECT, handleReconnecting);
+useEmitter(BUS_EVENTS.MESSAGE_CREATED, () => {
+  if (showNotification.value || isDisconnected.value) {
+    handleReconnectionCompleted();
+  }
+});
 
 onBeforeUnmount(() => {
   clearTimeout(reconnectTimeout);
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
 });
 </script>
 

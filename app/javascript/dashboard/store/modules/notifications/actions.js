@@ -166,4 +166,7 @@ export const actions = {
   updateNotificationFilters: ({ commit }, filters) => {
     commit(types.UPDATE_NOTIFICATION_FILTERS, filters);
   },
+  updateConversationStatus: ({ commit }, data) => {
+    commit(types.UPDATE_NOTIFICATION_CONVERSATION_STATUS, data);
+  },
 };

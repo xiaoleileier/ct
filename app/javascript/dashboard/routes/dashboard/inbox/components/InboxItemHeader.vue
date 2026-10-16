@@ -118,7 +118,7 @@ export default {
         class="xl:hidden flex"
       />
       <PaginationButton
-        v-if="totalLength > 1"
+        v-if="totalLength > 1 && currentIndex >= 0"
         :total-length="totalLength"
         :current-index="currentIndex + 1"
         @next="onClickNext"

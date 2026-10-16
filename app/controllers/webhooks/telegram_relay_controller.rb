@@ -2,21 +2,22 @@
 
 class Webhooks::TelegramRelayController < ActionController::API
   def process_payload
-    return head :ok unless Telegram::ForumRelayService.configured?
-
     msg = params[:message] || params[:edited_message]
     return head :ok if msg.blank?
     return head :ok if msg.dig(:from, :is_bot)
 
     chat_id = msg.dig(:chat, :id).to_s
-    expected_group_id = Telegram::ForumRelayService.group_id.to_s
-    return head :ok unless chat_id == expected_group_id
-
     thread_id = msg[:message_thread_id]
     return head :ok if thread_id.blank?
 
     conversation = Conversation.where("additional_attributes ->> 'telegram_topic_id' = ?", thread_id.to_s).last
     return head :ok if conversation.blank?
+
+    account = conversation.account
+    return head :ok unless Telegram::ForumRelayService.configured?(account)
+
+    expected_group_id = Telegram::ForumRelayService.group_id(account).to_s
+    return head :ok unless chat_id == expected_group_id
 
     process_telegram_reply(conversation, msg)
 
@@ -27,10 +28,11 @@ class Webhooks::TelegramRelayController < ActionController::API
   end
 
   def setup_webhook
-    return render json: { error: 'Not configured' }, status: :unprocessable_entity unless Telegram::ForumRelayService.configured?
+    account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
+    bot_token = Telegram::ForumRelayService.bot_token(account)
+    return render json: { ok: false, error: '未配置 Telegram 机器人 Token' }, status: :unprocessable_entity if bot_token.blank?
 
-    bot_token = Telegram::ForumRelayService.bot_token
-    frontend_url = ENV.fetch('FRONTEND_URL', nil)
+    frontend_url = ENV.fetch('FRONTEND_URL', request.base_url)
     webhook_url = "#{frontend_url}/webhooks/telegram_relay"
 
     res = HTTParty.post("https://api.telegram.org/bot#{bot_token}/setWebhook", body: {
@@ -39,9 +41,32 @@ class Webhooks::TelegramRelayController < ActionController::API
     })
 
     render json: {
+      ok: res.parsed_response['ok'] == true,
       webhook_url: webhook_url,
       telegram_response: res.parsed_response
     }
+  rescue StandardError => e
+    render json: { ok: false, error: e.message }, status: :unprocessable_entity
+  end
+
+  def check_status
+    account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
+    bot_token = Telegram::ForumRelayService.bot_token(account)
+    group_id = Telegram::ForumRelayService.group_id(account)
+    return render json: { configured: false, error: '尚未配置 Telegram 机器人 Token' } if bot_token.blank?
+
+    bot_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMe")
+    webhook_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getWebhookInfo")
+
+    render json: {
+      configured: true,
+      ok: bot_res.parsed_response['ok'] == true,
+      bot: bot_res.parsed_response['result'],
+      webhook: webhook_res.parsed_response['result'],
+      group_id: group_id
+    }
+  rescue StandardError => e
+    render json: { configured: false, error: e.message }, status: :unprocessable_entity
   end
 
   private
@@ -87,7 +112,7 @@ class Webhooks::TelegramRelayController < ActionController::API
   end
 
   def download_and_attach(message, file_id, file_type, custom_filename = nil)
-    bot_token = Telegram::ForumRelayService.bot_token
+    bot_token = Telegram::ForumRelayService.bot_token(message.account)
     file_info = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getFile?file_id=#{file_id}")
     return unless file_info.success? && file_info.parsed_response['ok']
 

@@ -3,24 +3,32 @@
 class Telegram::ForumRelayService
   pattr_initialize [:message!]
 
-  def self.configured?
-    ENV['TELEGRAM_RELAY_BOT_TOKEN'].present? && ENV['TELEGRAM_RELAY_GROUP_ID'].present?
+  def self.configured?(account = nil)
+    bot_token(account).present? && group_id(account).present? && enabled?(account)
   end
 
-  def self.bot_token
-    ENV.fetch('TELEGRAM_RELAY_BOT_TOKEN', nil)
+  def self.enabled?(account = nil)
+    return true if account.blank? || account.settings.blank? || !account.settings.key?('telegram_relay_enabled')
+
+    ActiveModel::Type::Boolean.new.cast(account.settings['telegram_relay_enabled'])
   end
 
-  def self.group_id
-    ENV.fetch('TELEGRAM_RELAY_GROUP_ID', nil)
+  def self.bot_token(account = nil)
+    token = account&.settings&.dig('telegram_relay_bot_token')
+    token.presence || ENV.fetch('TELEGRAM_RELAY_BOT_TOKEN', nil)
   end
 
-  def self.api_url(endpoint)
-    "https://api.telegram.org/bot#{bot_token}/#{endpoint}"
+  def self.group_id(account = nil)
+    gid = account&.settings&.dig('telegram_relay_group_id')
+    gid.presence || ENV.fetch('TELEGRAM_RELAY_GROUP_ID', nil)
+  end
+
+  def self.api_url(endpoint, account = nil)
+    "https://api.telegram.org/bot#{bot_token(account)}/#{endpoint}"
   end
 
   def perform
-    return unless self.class.configured?
+    return unless self.class.configured?(account)
     return if message.source_id&.start_with?('telegram_')
     return if message.private?
 
@@ -37,25 +45,28 @@ class Telegram::ForumRelayService
   end
 
   def self.handle_conversation_status_change(conversation)
-    return unless configured?
+    account = conversation.account
+    return unless configured?(account)
 
     topic_id = conversation.additional_attributes['telegram_topic_id']
     return if topic_id.blank?
 
+    gid = group_id(account)
+
     if conversation.resolved?
-      HTTParty.post(api_url('closeForumTopic'), body: {
-        chat_id: group_id,
+      HTTParty.post(api_url('closeForumTopic', account), body: {
+        chat_id: gid,
         message_thread_id: topic_id
       })
-      HTTParty.post(api_url('sendMessage'), body: {
-        chat_id: group_id,
+      HTTParty.post(api_url('sendMessage', account), body: {
+        chat_id: gid,
         message_thread_id: topic_id,
         text: '✅ <b>该会话已被客服在后台解决 (Resolved)</b>',
         parse_mode: 'HTML'
       })
     elsif conversation.open?
-      HTTParty.post(api_url('reopenForumTopic'), body: {
-        chat_id: group_id,
+      HTTParty.post(api_url('reopenForumTopic', account), body: {
+        chat_id: gid,
         message_thread_id: topic_id
       })
     end
@@ -64,14 +75,15 @@ class Telegram::ForumRelayService
   end
 
   def self.update_topic_title(conversation)
-    return unless configured?
+    account = conversation.account
+    return unless configured?(account)
 
     topic_id = conversation.additional_attributes['telegram_topic_id']
     return if topic_id.blank?
 
     name = build_topic_name(conversation)
-    HTTParty.post(api_url('editForumTopic'), body: {
-      chat_id: group_id,
+    HTTParty.post(api_url('editForumTopic', account), body: {
+      chat_id: group_id(account),
       message_thread_id: topic_id,
       name: name
     })
@@ -93,8 +105,8 @@ class Telegram::ForumRelayService
 
   def create_topic!
     topic_name = self.class.build_topic_name(conversation)
-    response = HTTParty.post(self.class.api_url('createForumTopic'), body: {
-      chat_id: self.class.group_id,
+    response = HTTParty.post(self.class.api_url('createForumTopic', account), body: {
+      chat_id: self.class.group_id(account),
       name: topic_name
     })
 
@@ -127,8 +139,8 @@ class Telegram::ForumRelayService
       💡 <i>提示: 在此话题内直接回复文字、表情或图片，将直接发送给网站访客！</i>
     HTML
 
-    HTTParty.post(self.class.api_url('sendMessage'), body: {
-      chat_id: self.class.group_id,
+    HTTParty.post(self.class.api_url('sendMessage', account), body: {
+      chat_id: self.class.group_id(account),
       message_thread_id: topic_id,
       text: card_text,
       parse_mode: 'HTML',
@@ -145,8 +157,8 @@ class Telegram::ForumRelayService
 
     if message.content.present?
       text = "#{sender_prefix}#{CGI.escapeHTML(message.content)}"
-      HTTParty.post(self.class.api_url('sendMessage'), body: {
-        chat_id: self.class.group_id,
+      HTTParty.post(self.class.api_url('sendMessage', account), body: {
+        chat_id: self.class.group_id(account),
         message_thread_id: topic_id,
         text: text,
         parse_mode: 'HTML'
@@ -162,14 +174,14 @@ class Telegram::ForumRelayService
       next if url.blank?
 
       if att.image?
-        HTTParty.post(self.class.api_url('sendPhoto'), body: {
-          chat_id: self.class.group_id,
+        HTTParty.post(self.class.api_url('sendPhoto', account), body: {
+          chat_id: self.class.group_id(account),
           message_thread_id: topic_id,
           photo: url
         })
       else
-        HTTParty.post(self.class.api_url('sendDocument'), body: {
-          chat_id: self.class.group_id,
+        HTTParty.post(self.class.api_url('sendDocument', account), body: {
+          chat_id: self.class.group_id(account),
           message_thread_id: topic_id,
           document: url
         })

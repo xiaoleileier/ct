@@ -104,6 +104,33 @@
           "ERROR": "Failed to update audio transcription setting"
         }
       },
+      "TELEGRAM_RELAY": {
+        "TITLE": "Telegram Forum Relay Bot",
+        "NOTE": "Relay conversations into a Telegram Supergroup with Forum Topics enabled. Customer messages create dedicated topic threads, and replies from team members inside the topic are forwarded back to customers in real-time.",
+        "ENABLE_LABEL": "Enable Telegram Relay",
+        "BOT_TOKEN": {
+          "LABEL": "Telegram Bot Token",
+          "PLACEHOLDER": "e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ",
+          "HELP": "Create a bot via @BotFather on Telegram and paste the token here."
+        },
+        "GROUP_ID": {
+          "LABEL": "Telegram Group ID",
+          "PLACEHOLDER": "e.g. -1001234567890",
+          "HELP": "Supergroup ID with Forum Topics enabled (starts with -100). Make sure your bot is added as an Administrator with Manage Topics permissions."
+        },
+        "UPDATE_BUTTON": "Save Telegram Settings",
+        "SETUP_WEBHOOK": "Register Webhook",
+        "TEST_CONNECTION": "Test Connection",
+        "WEBHOOK_INFO": "Webhook URL:",
+        "STATUS_CONNECTED": "Connected to Telegram Bot: @{botName}",
+        "STATUS_ERROR": "Failed to connect to Telegram. Please verify your bot token.",
+        "API": {
+          "SUCCESS": "Telegram relay settings updated successfully",
+          "ERROR": "Failed to update Telegram relay settings",
+          "WEBHOOK_SUCCESS": "Telegram Webhook registered successfully! Bot is ready.",
+          "WEBHOOK_ERROR": "Failed to register Telegram Webhook. Please verify Bot Token."
+        }
+      },
       "AUTO_RESOLVE_DURATION": {
         "LABEL": "Inactivity duration for resolution",
         "HELP": "Duration after a conversation should auto resolve if there is no activity",

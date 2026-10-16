@@ -104,6 +104,33 @@
           "ERROR": "更新语音转录设置失败"
         }
       },
+      "TELEGRAM_RELAY": {
+        "TITLE": "Telegram 话题群客服转发机器人",
+        "NOTE": "将客户咨询消息实时同步到 Telegram 论坛超级群组（Forum Topics）。新咨询自动创建独立话题，群内成员直接回复文字、图片、表情即可实时同步给客户。",
+        "ENABLE_LABEL": "启用 Telegram 话题转发",
+        "BOT_TOKEN": {
+          "LABEL": "Telegram 机器人 Token (Bot Token)",
+          "PLACEHOLDER": "例如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ",
+          "HELP": "在 Telegram 中通过 @BotFather 创建机器人并获取此 Token。"
+        },
+        "GROUP_ID": {
+          "LABEL": "Telegram 群组 ID (Group ID)",
+          "PLACEHOLDER": "例如: -1001234567890",
+          "HELP": "开启了 Topics 话题功能的超级群组 ID（以 -100 开头）。请确保机器人已加入该群并被赋予管理员权限（需包含 Manage Topics 话题管理权限）。"
+        },
+        "UPDATE_BUTTON": "保存 Telegram 配置",
+        "SETUP_WEBHOOK": "一键激活 Webhook",
+        "TEST_CONNECTION": "测试连接与状态",
+        "WEBHOOK_INFO": "Webhook 地址：",
+        "STATUS_CONNECTED": "已成功连接至 Telegram 机器人：@{botName}",
+        "STATUS_ERROR": "连接 Telegram 失败，请检查 Bot Token 是否正确。",
+        "API": {
+          "SUCCESS": "Telegram 机器人配置保存成功",
+          "ERROR": "保存 Telegram 机器人配置失败",
+          "WEBHOOK_SUCCESS": "Telegram Webhook 注册成功！机器人已就绪。",
+          "WEBHOOK_ERROR": "注册 Telegram Webhook 失败，请检查 Bot Token 是否有效。"
+        }
+      },
       "AUTO_RESOLVE_DURATION": {
         "LABEL": "自动解决前的无活动市场",
         "HELP": "对话无活动时自动解决时长",

@@ -50,5 +50,8 @@ class Messages::LeadCaptureService
 
     # 为会话自动打上“已留资”标签
     conversation.reload.add_labels(['已留资']) rescue nil
+
+    # 同步更新 Telegram 话题标题（补充手机号）
+    ::Telegram::ForumRelayService.update_topic_title(conversation) rescue nil
   end
 end

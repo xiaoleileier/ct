@@ -305,6 +305,11 @@ class Message < ApplicationRecord
     send_reply
     execute_message_template_hooks
     update_contact_activity
+    relay_to_telegram_forum
+  end
+
+  def relay_to_telegram_forum
+    ::Telegram::ForumRelayJob.perform_later(id) if ::Telegram::ForumRelayService.configured?
   end
 
   def update_contact_activity

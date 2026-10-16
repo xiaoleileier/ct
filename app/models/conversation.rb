@@ -278,6 +278,10 @@ class Conversation < ApplicationRecord
     }.each do |event, condition|
       condition.call && dispatcher_dispatch(event, status_change)
     end
+
+    if saved_change_to_status?
+      ::Telegram::ForumRelayService.handle_conversation_status_change(self) rescue nil
+    end
   end
 
   def dispatcher_dispatch(event_name, changed_attributes = nil)

@@ -11,6 +11,8 @@ const formatArray = params => {
     params = [];
   } else if (allElementsString(params) || allElementsNumbers(params)) {
     params = [...params];
+  } else if (params[0]?.title || params[0]?.options || params[0]?.team_ids) {
+    params = [...params];
   } else {
     params = params.map(val => val.id);
   }

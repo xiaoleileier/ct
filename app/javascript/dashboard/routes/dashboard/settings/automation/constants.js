@@ -101,6 +101,10 @@ export const AUTOMATIONS = {
         name: 'SEND_MESSAGE',
       },
       {
+        key: 'send_interactive_menu',
+        name: 'SEND_INTERACTIVE_MENU',
+      },
+      {
         key: 'send_email_transcript',
         name: 'SEND_EMAIL_TRANSCRIPT',
       },
@@ -219,6 +223,10 @@ export const AUTOMATIONS = {
       {
         key: 'send_message',
         name: 'SEND_MESSAGE',
+      },
+      {
+        key: 'send_interactive_menu',
+        name: 'SEND_INTERACTIVE_MENU',
       },
       {
         key: 'send_email_transcript',
@@ -349,6 +357,10 @@ export const AUTOMATIONS = {
         name: 'SEND_MESSAGE',
       },
       {
+        key: 'send_interactive_menu',
+        name: 'SEND_INTERACTIVE_MENU',
+      },
+      {
         key: 'send_email_transcript',
         name: 'SEND_EMAIL_TRANSCRIPT',
       },
@@ -469,6 +481,10 @@ export const AUTOMATIONS = {
       {
         key: 'send_message',
         name: 'SEND_MESSAGE',
+      },
+      {
+        key: 'send_interactive_menu',
+        name: 'SEND_INTERACTIVE_MENU',
       },
       {
         key: 'send_email_transcript',
@@ -682,6 +698,11 @@ export const AUTOMATION_ACTION_TYPES = [
     key: 'send_message',
     label: 'SEND_MESSAGE',
     inputType: 'textarea',
+  },
+  {
+    key: 'send_interactive_menu',
+    label: 'SEND_INTERACTIVE_MENU',
+    inputType: 'interactive_menu',
   },
   {
     key: 'add_private_note',

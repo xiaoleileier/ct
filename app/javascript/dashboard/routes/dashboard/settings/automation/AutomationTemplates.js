@@ -1,5 +1,38 @@
 export const AUTOMATION_TEMPLATES = [
   {
+    id: 'interactive_menu',
+    icon: 'i-lucide-layout-grid',
+    badge: '交互菜单',
+    badgeColor: 'blue',
+    title: '新会话自动发送可点击按钮菜单',
+    desc: '客户打开新会话时，自动弹出带可点击按钮的业务导航菜单，客户点击选项即可自助办理',
+    rule: {
+      name: '新会话自动发送业务导航菜单',
+      description: '客户发起新咨询时，自动发送可点击的交互式按钮菜单进行引导',
+      event_name: 'conversation_created',
+      conditions: [
+        {
+          attribute_key: 'status',
+          filter_operator: 'equal_to',
+          values: [{ id: 'open', name: 'Open' }],
+          query_operator: 'and',
+          custom_attribute_type: '',
+        },
+      ],
+      actions: [
+        {
+          action_name: 'send_interactive_menu',
+          action_params: [
+            {
+              title: '您好！欢迎使用在线客服，请选择您想了解的业务：',
+              options: '业务收费方案, 常见使用问题, 转接人工客服',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: 'keyword_reply',
     icon: 'i-lucide-message-circle',
     badge: '高频推荐',

@@ -74,6 +74,10 @@ export default {
         submittedValues: [selectedOption],
         messageId: this.messageId,
       });
+      const content = selectedOption.title || selectedOption.value;
+      if (content) {
+        this.$store.dispatch('conversation/sendMessage', { content });
+      }
     },
     onFormSubmit(formValues) {
       const formValuesAsArray = Object.keys(formValues).map(key => ({

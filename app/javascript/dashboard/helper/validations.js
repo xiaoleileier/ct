@@ -129,6 +129,15 @@ const validateSingleAction = action => {
     'open_conversation',
   ];
 
+  if (action.action_name === 'send_interactive_menu') {
+    const params = action.action_params;
+    const item = Array.isArray(params) ? params[0] : params;
+    if (!item || (!item.title && !item.options)) {
+      return ACTION_PARAMETERS_REQUIRED;
+    }
+    return null;
+  }
+
   if (
     !noParamActions.includes(action.action_name) &&
     (!action.action_params || action.action_params.length === 0)

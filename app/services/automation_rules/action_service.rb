@@ -47,6 +47,44 @@ class AutomationRules::ActionService < ActionService
     Messages::MessageBuilder.new(nil, @conversation, params).perform
   end
 
+  def send_interactive_menu(params)
+    return if conversation_a_tweet?
+
+    menu_data = params[0]
+    return if menu_data.blank?
+
+    title = menu_data.is_a?(Hash) ? (menu_data['title'] || menu_data[:title]) : menu_data.to_s
+    raw_options = menu_data.is_a?(Hash) ? (menu_data['options'] || menu_data[:options] || menu_data['items'] || menu_data[:items]) : ''
+
+    options_list = if raw_options.is_a?(Array)
+                     raw_options
+                   elsif raw_options.is_a?(String)
+                     raw_options.split(/[,，\n]/).map(&:strip).reject(&:blank?)
+                   else
+                     []
+                   end
+
+    items = options_list.map do |opt|
+      opt_title = opt.is_a?(Hash) ? (opt['title'] || opt[:title]) : opt.to_s
+      opt_value = opt.is_a?(Hash) ? (opt['value'] || opt[:value] || opt_title) : opt.to_s
+      { title: opt_title, value: opt_value }
+    end
+
+    return if items.blank?
+
+    message_params = {
+      content: title,
+      content_type: 'input_select',
+      content_attributes: {
+        items: items,
+        automation_rule_id: @rule.id
+      },
+      private: false
+    }
+
+    Messages::MessageBuilder.new(nil, @conversation, message_params).perform
+  end
+
   def add_private_note(message)
     return if conversation_a_tweet?
 

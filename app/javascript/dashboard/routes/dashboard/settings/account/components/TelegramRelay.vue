@@ -20,42 +20,10 @@ const isSettingUpWebhook = ref(false);
 const isTesting = ref(false);
 const statusResult = ref(null);
 
-watch(
-  currentAccount,
-  account => {
-    if (account && account.id) {
-      const s = account.settings || {};
-      botToken.value = s.telegram_relay_bot_token || '';
-      groupId.value = s.telegram_relay_group_id || '';
-      isEnabled.value = s.telegram_relay_enabled ?? false;
+let hasAutoTested = false;
 
-      if (botToken.value && !statusResult.value && !isTesting.value) {
-        handleTestConnection(true);
-      }
-    }
-  },
-  { deep: true, immediate: true }
-);
-
-onMounted(() => {
-  if (botToken.value && !statusResult.value) {
-    handleTestConnection(true);
-  }
-});
-
-const botUsername = computed(() => statusResult.value?.bot?.username || '');
-const botFirstName = computed(() => statusResult.value?.bot?.first_name || '');
-const webhookUrl = computed(() => statusResult.value?.webhook?.url || '');
-const webhookError = computed(
-  () => statusResult.value?.webhook?.last_error_message || ''
-);
-const groupInfo = computed(() => statusResult.value?.group || null);
-const isGroupBotReady = computed(() => {
-  const g = statusResult.value?.group;
-  return !!(g && g.bot_is_admin && g.can_manage_topics);
-});
-
-const handleSave = async () => {
+// Function declarations are hoisted safely
+async function handleSave() {
   try {
     isSubmitting.value = true;
     await updateAccount({
@@ -69,54 +37,13 @@ const handleSave = async () => {
   } finally {
     isSubmitting.value = false;
   }
-};
+}
 
-const handleToggle = async () => {
+async function handleToggle() {
   return handleSave();
-};
+}
 
-const handleSetupWebhook = async () => {
-  const token = (botToken.value || '').trim();
-  if (!token) {
-    useAlert(t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR'));
-    return;
-  }
-  try {
-    isSettingUpWebhook.value = true;
-    // Always persist configuration first
-    await updateAccount({
-      telegram_relay_bot_token: token,
-      telegram_relay_group_id: (groupId.value || '').trim(),
-      telegram_relay_enabled: isEnabled.value,
-    });
-
-    const axiosClient = window.axios || axios;
-    const response = await axiosClient.post('/webhooks/telegram_relay/setup', {
-      account_id: accountId.value,
-      bot_token: token,
-    });
-
-    if (response.data?.ok) {
-      useAlert(t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_SUCCESS'));
-      await handleTestConnection(true);
-    } else {
-      useAlert(
-        response.data?.telegram_response?.description ||
-          response.data?.error ||
-          t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR')
-      );
-    }
-  } catch (error) {
-    useAlert(
-      error.response?.data?.error ||
-        t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR')
-    );
-  } finally {
-    isSettingUpWebhook.value = false;
-  }
-};
-
-const handleTestConnection = async (silent = false) => {
+async function handleTestConnection(silent = false) {
   const token = (botToken.value || '').trim();
   if (!token) {
     if (!silent) {
@@ -163,7 +90,87 @@ const handleTestConnection = async (silent = false) => {
   } finally {
     isTesting.value = false;
   }
-};
+}
+
+async function handleSetupWebhook() {
+  const token = (botToken.value || '').trim();
+  if (!token) {
+    useAlert(t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR'));
+    return;
+  }
+  try {
+    isSettingUpWebhook.value = true;
+    await updateAccount({
+      telegram_relay_bot_token: token,
+      telegram_relay_group_id: (groupId.value || '').trim(),
+      telegram_relay_enabled: isEnabled.value,
+    });
+
+    const axiosClient = window.axios || axios;
+    const response = await axiosClient.post('/webhooks/telegram_relay/setup', {
+      account_id: accountId.value,
+      bot_token: token,
+    });
+
+    if (response.data?.ok) {
+      useAlert(t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_SUCCESS'));
+      await handleTestConnection(true);
+    } else {
+      useAlert(
+        response.data?.telegram_response?.description ||
+          response.data?.error ||
+          t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR')
+      );
+    }
+  } catch (error) {
+    useAlert(
+      error.response?.data?.error ||
+        t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR')
+    );
+  } finally {
+    isSettingUpWebhook.value = false;
+  }
+}
+
+watch(
+  currentAccount,
+  () => {
+    const {
+      telegram_relay_bot_token,
+      telegram_relay_group_id,
+      telegram_relay_enabled,
+    } = currentAccount.value?.settings || {};
+
+    botToken.value = telegram_relay_bot_token || '';
+    groupId.value = telegram_relay_group_id || '';
+    isEnabled.value = telegram_relay_enabled ?? false;
+
+    if (botToken.value && !hasAutoTested && !statusResult.value) {
+      hasAutoTested = true;
+      handleTestConnection(true);
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+onMounted(() => {
+  if (botToken.value && !hasAutoTested) {
+    hasAutoTested = true;
+    handleTestConnection(true);
+  }
+});
+
+const botUsername = computed(() => statusResult.value?.bot?.username || '');
+const botFirstName = computed(() => statusResult.value?.bot?.first_name || '');
+const webhookUrl = computed(() => statusResult.value?.webhook?.url || '');
+const webhookError = computed(
+  () => statusResult.value?.webhook?.last_error_message || ''
+);
+const groupInfo = computed(() => statusResult.value?.group || null);
+const isGroupBotReady = computed(() => {
+  const g = statusResult.value?.group;
+  return !!(g && g.bot_is_admin && g.can_manage_topics);
+});
 </script>
 
 <template>

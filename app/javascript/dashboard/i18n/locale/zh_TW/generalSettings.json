@@ -129,7 +129,7 @@
         "BOT_TOKEN": {
           "LABEL": "Telegram 機器人 Token (Bot Token)",
           "PLACEHOLDER": "例如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ",
-          "HELP": "在 Telegram 中通過 @BotFather 創建機器人並獲取此 Token。"
+          "HELP": "在 Telegram 中通過 BotFather 創建機器人並獲取此 Token。"
         },
         "GROUP_ID": {
           "LABEL": "Telegram 群組 ID (Group ID)",
@@ -140,7 +140,7 @@
         "SETUP_WEBHOOK": "一鍵激活 Webhook",
         "TEST_CONNECTION": "測試連接與狀態",
         "WEBHOOK_INFO": "Webhook 地址：",
-        "STATUS_CONNECTED": "已成功連接至 Telegram 機器人：@{botName}",
+        "STATUS_CONNECTED": "已成功連接至 Telegram 機器人：{botName}",
         "STATUS_ERROR": "連接 Telegram 失敗，請檢查 Bot Token 是否正確。",
         "API": {
           "SUCCESS": "Telegram 機器人配置保存成功",

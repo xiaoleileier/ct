@@ -323,7 +323,9 @@ export default {
           if (response.data && response.data.ok) {
             useAlert(
               this.$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.STATUS_CONNECTED', {
-                botName: response.data.bot?.username || 'Bot',
+                botName: response.data.bot?.username
+                  ? `@${response.data.bot.username}`
+                  : 'Bot',
               })
             );
           } else {

@@ -58,6 +58,8 @@ export default {
       isTestingTelegramConnection: false,
       telegramRelayStatus: null,
       hasAutoTestedTelegram: false,
+      widgetHotQuestions: '',
+      isSavingHotQuestions: false,
     };
   },
   validations: {
@@ -131,6 +133,20 @@ export default {
       const g = this.telegramRelayStatus?.group;
       return !!(g && g.bot_is_admin && g.can_manage_topics);
     },
+    parsedPreviewQuestions() {
+      if (this.widgetHotQuestions && this.widgetHotQuestions.trim()) {
+        return this.widgetHotQuestions
+          .split(/[\n,，]/)
+          .map(q => q.trim())
+          .filter(Boolean);
+      }
+      return [
+        '节点无法连接排查',
+        '客户端配置订阅教程',
+        '续费与流量到账查询',
+        '转接人工客服',
+      ];
+    },
   },
   watch: {
     currentAccount: {
@@ -145,6 +161,10 @@ export default {
           }
           if (s.telegram_relay_enabled !== undefined) {
             this.telegramRelayEnabled = s.telegram_relay_enabled;
+          }
+          if (!this.widgetHotQuestions && s.widget_hot_questions) {
+            const hq = s.widget_hot_questions;
+            this.widgetHotQuestions = Array.isArray(hq) ? hq.join('\n') : String(hq);
           }
           if (
             this.telegramRelayBotToken &&
@@ -189,6 +209,13 @@ export default {
         this.telegramRelayBotToken = s.telegram_relay_bot_token || '';
         this.telegramRelayGroupId = s.telegram_relay_group_id || '';
         this.telegramRelayEnabled = s.telegram_relay_enabled ?? false;
+
+        const hq = s.widget_hot_questions;
+        if (Array.isArray(hq)) {
+          this.widgetHotQuestions = hq.join('\n');
+        } else if (typeof hq === 'string') {
+          this.widgetHotQuestions = hq;
+        }
 
         if (this.telegramRelayBotToken && !this.hasAutoTestedTelegram) {
           this.hasAutoTestedTelegram = true;
@@ -239,6 +266,20 @@ export default {
         useAlert(this.$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.ERROR'));
       } finally {
         this.isSavingTelegramRelay = false;
+      }
+    },
+
+    async saveHotQuestions() {
+      try {
+        this.isSavingHotQuestions = true;
+        await this.$store.dispatch('accounts/update', {
+          widget_hot_questions: (this.widgetHotQuestions || '').trim(),
+        });
+        useAlert(this.$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.API.SUCCESS'));
+      } catch (error) {
+        useAlert(this.$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.API.ERROR'));
+      } finally {
+        this.isSavingHotQuestions = false;
       }
     },
 
@@ -697,6 +738,64 @@ export default {
               @click="() => testTelegramConnection(false)"
             >
               {{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.TEST_CONNECTION') }}
+            </NextButton>
+          </div>
+        </form>
+      </div>
+    </SectionLayout>
+
+    <SectionLayout
+      :title="$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.TITLE')"
+      :description="$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.NOTE')"
+    >
+      <div class="space-y-4">
+        <form class="space-y-4" @submit.prevent="saveHotQuestions">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium text-n-slate-12 block">
+              {{ $t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.LABEL') }}
+            </label>
+            <p class="text-xs text-n-slate-11">
+              {{ $t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.SUBTITLE') }}
+            </p>
+            <textarea
+              v-model="widgetHotQuestions"
+              rows="4"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-n-weak bg-n-alpha-1 dark:bg-n-solid-2 focus:outline-none focus:ring-1 focus:ring-n-brand text-n-slate-12 placeholder:text-n-slate-9"
+              :placeholder="$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.PLACEHOLDER')"
+            />
+          </div>
+
+          <!-- Live Preview -->
+          <div class="p-3.5 rounded-xl border border-n-weak bg-n-alpha-1 dark:bg-n-solid-2 space-y-2">
+            <div class="flex items-center justify-between text-xs font-medium text-n-slate-11">
+              <span class="flex items-center gap-1.5">
+                <span>✨</span>
+                <span>{{ $t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.PREVIEW_TITLE') }}</span>
+              </span>
+              <span v-if="!widgetHotQuestions || !widgetHotQuestions.trim()" class="text-[11px] text-n-teal-11 font-medium">
+                ({{ $t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.DEFAULT_TAG') }})
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <span
+                v-for="(q, idx) in parsedPreviewQuestions"
+                :key="idx"
+                class="px-2.5 py-1 text-xs rounded-full bg-n-solid-1 dark:bg-n-solid-3 text-n-slate-12 border border-n-strong font-medium shadow-2xs"
+              >
+                {{ q }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Save Button -->
+          <div class="pt-1">
+            <NextButton
+              blue
+              :is-loading="isSavingHotQuestions"
+              type="submit"
+              :label="$t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.SAVE_BUTTON')"
+            >
+              {{ $t('GENERAL_SETTINGS.FORM.HOT_QUESTIONS.SAVE_BUTTON') }}
             </NextButton>
           </div>
         </form>

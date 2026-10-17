@@ -131,6 +131,20 @@
           "WEBHOOK_ERROR": "注册 Telegram Webhook 失败，请检查 Bot Token 是否有效。"
         }
       },
+      "HOT_QUESTIONS": {
+        "TITLE": "聊天挂件快捷问题定制",
+        "NOTE": "自定义网站右下角聊天界面底部的「猜你想问」快捷问题气泡。留空时将自动使用默认推荐设置。",
+        "LABEL": "快捷问题列表（每行一个，或用逗号隔开）",
+        "SUBTITLE": "客户进入聊天界面时可点击底部气泡快速发起提问或选择常见业务。",
+        "PLACEHOLDER": "节点无法连接排查\n客户端配置订阅教程\n续费与流量到账查询\n转接人工客服",
+        "PREVIEW_TITLE": "客户视角实时预览",
+        "DEFAULT_TAG": "当前使用默认业务预设",
+        "SAVE_BUTTON": "保存快捷问题配置",
+        "API": {
+          "SUCCESS": "快捷问题配置保存成功",
+          "ERROR": "保存快捷问题配置失败"
+        }
+      },
       "AUTO_RESOLVE_DURATION": {
         "LABEL": "自动解决前的无活动市场",
         "HELP": "对话无活动时自动解决时长",

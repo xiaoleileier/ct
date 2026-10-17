@@ -131,6 +131,20 @@
           "WEBHOOK_ERROR": "Failed to register Telegram Webhook. Please verify Bot Token."
         }
       },
+      "HOT_QUESTIONS": {
+        "TITLE": "Chat Widget Quick Questions",
+        "NOTE": "Customize the \"Quick Questions\" shortcut bubbles displayed at the bottom of the customer chat interface. If left blank, default recommended questions will be used.",
+        "LABEL": "Quick Questions List (One per line or comma-separated)",
+        "SUBTITLE": "Customers can tap any bubble to quickly send questions or select topics.",
+        "PLACEHOLDER": "Node Connection Troubleshoot\nClient Subscription Setup\nRenewal & Traffic Balance\nTalk to an Agent",
+        "PREVIEW_TITLE": "Customer View Live Preview",
+        "DEFAULT_TAG": "Default Business Preset",
+        "SAVE_BUTTON": "Save Quick Questions",
+        "API": {
+          "SUCCESS": "Quick questions updated successfully",
+          "ERROR": "Failed to update quick questions"
+        }
+      },
       "AUTO_RESOLVE_DURATION": {
         "LABEL": "Inactivity duration for resolution",
         "HELP": "Duration after a conversation should auto resolve if there is no activity",

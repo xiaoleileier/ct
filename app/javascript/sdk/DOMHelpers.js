@@ -1,6 +1,31 @@
 import { SDK_CSS } from './sdk.js';
 import { IFrameHelper } from './IFrameHelper';
 
+export const injectPreconnect = baseUrl => {
+  if (!baseUrl || typeof document === 'undefined' || !document.head) return;
+  try {
+    const parsed = new URL(baseUrl, window.location.href);
+    const origin = parsed.origin;
+    if (origin === window.location.origin) return;
+
+    if (!document.querySelector(`link[rel="dns-prefetch"][href="${origin}"]`)) {
+      const dnsLink = document.createElement('link');
+      dnsLink.rel = 'dns-prefetch';
+      dnsLink.href = origin;
+      document.head.appendChild(dnsLink);
+    }
+    if (!document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+      const preconnectLink = document.createElement('link');
+      preconnectLink.rel = 'preconnect';
+      preconnectLink.href = origin;
+      preconnectLink.crossOrigin = 'anonymous';
+      document.head.appendChild(preconnectLink);
+    }
+  } catch (e) {
+    // Ignore invalid URL
+  }
+};
+
 export const loadCSS = () => {
   const css = document.createElement('style');
   css.innerHTML = `${SDK_CSS}`;

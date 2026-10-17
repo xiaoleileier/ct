@@ -14,24 +14,24 @@
   },
   "THUMBNAIL": {
     "AUTHOR": {
-      "NOT_AVAILABLE": "Not available"
+      "NOT_AVAILABLE": "暂无"
     }
   },
   "TEAM_AVAILABILITY": {
     "ONLINE": "在线",
     "OFFLINE": "当前已离线",
-    "BACK_AS_SOON_AS_POSSIBLE": "We will be back as soon as possible"
+    "BACK_AS_SOON_AS_POSSIBLE": "我们会尽快回复您"
   },
   "REPLY_TIME": {
     "IN_A_FEW_MINUTES": "通常在几分钟内回复您",
     "IN_A_FEW_HOURS": "通常在几小时内回复您",
     "IN_A_DAY": "通常在一天之内回复您",
-    "BACK_IN_HOURS": "We will be back online in {n} hour | We will be back online in {n} hours",
-    "BACK_IN_MINUTES": "We will be back online in {time} minutes",
-    "BACK_AT_TIME": "We will be back online at {time}",
-    "BACK_ON_DAY": "We will be back online on {day}",
-    "BACK_TOMORROW": "We will be back online tomorrow",
-    "BACK_IN_SOME_TIME": "We will be back online in some time"
+    "BACK_IN_HOURS": "将在 {n} 小时后回复",
+    "BACK_IN_MINUTES": "将在 {time} 分钟后回复",
+    "BACK_AT_TIME": "将在 {time} 回复",
+    "BACK_ON_DAY": "将在 {day} 回复",
+    "BACK_TOMORROW": "明天回复",
+    "BACK_IN_SOME_TIME": "稍后回复"
   },
   "DAY_NAMES": {
     "SUNDAY": "周日",
@@ -149,5 +149,9 @@
   },
   "FOOTER_REPLY_TO": {
     "REPLY_TO": "回复："
+  },
+  "NETWORK": {
+    "OFFLINE_RETRYING": "网络连接已断开，正在尝试重连...",
+    "RECONNECTED": "网络连接已恢复"
   }
 }

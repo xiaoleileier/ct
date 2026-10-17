@@ -78,6 +78,13 @@ export default {
     },
     onFocus() {
       this.isFocused = true;
+      setTimeout(() => {
+        this.$el?.scrollIntoView?.({
+          block: 'nearest',
+          inline: 'nearest',
+          behavior: 'smooth',
+        });
+      }, 300);
     },
     handleButtonClick() {
       if (this.userInput && this.userInput.trim()) {

@@ -149,5 +149,9 @@
   },
   "FOOTER_REPLY_TO": {
     "REPLY_TO": "Replying to:"
+  },
+  "NETWORK": {
+    "OFFLINE_RETRYING": "Network disconnected. Reconnecting...",
+    "RECONNECTED": "Connection restored"
   }
 }

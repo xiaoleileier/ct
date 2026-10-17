@@ -14,40 +14,40 @@
   },
   "THUMBNAIL": {
     "AUTHOR": {
-      "NOT_AVAILABLE": "Not available"
+      "NOT_AVAILABLE": "暫無"
     }
   },
   "TEAM_AVAILABILITY": {
     "ONLINE": "我們在線上",
     "OFFLINE": "我們目前不在線上",
-    "BACK_AS_SOON_AS_POSSIBLE": "We will be back as soon as possible"
+    "BACK_AS_SOON_AS_POSSIBLE": "我們會盡快回覆您"
   },
   "REPLY_TIME": {
     "IN_A_FEW_MINUTES": "通常在幾分鐘內回覆",
     "IN_A_FEW_HOURS": "通常在幾小時內回覆",
     "IN_A_DAY": "通常在一天內回覆",
-    "BACK_IN_HOURS": "We will be back online in {n} hour | We will be back online in {n} hours",
-    "BACK_IN_MINUTES": "We will be back online in {time} minutes",
-    "BACK_AT_TIME": "We will be back online at {time}",
-    "BACK_ON_DAY": "We will be back online on {day}",
-    "BACK_TOMORROW": "We will be back online tomorrow",
-    "BACK_IN_SOME_TIME": "We will be back online in some time"
+    "BACK_IN_HOURS": "將在 {n} 小時後回覆",
+    "BACK_IN_MINUTES": "將在 {time} 分鐘後回覆",
+    "BACK_AT_TIME": "將在 {time} 回覆",
+    "BACK_ON_DAY": "將在 {day} 回覆",
+    "BACK_TOMORROW": "明天回覆",
+    "BACK_IN_SOME_TIME": "稍後回覆"
   },
   "DAY_NAMES": {
     "SUNDAY": "星期日",
     "MONDAY": "星期一",
-    "TUESDAY": "Tuesday",
-    "WEDNESDAY": "Wednesday",
-    "THURSDAY": "Thursday",
-    "FRIDAY": "Friday",
-    "SATURDAY": "Saturday"
+    "TUESDAY": "星期二",
+    "WEDNESDAY": "星期三",
+    "THURSDAY": "星期四",
+    "FRIDAY": "星期五",
+    "SATURDAY": "星期六"
   },
   "START_CONVERSATION": "開始對話",
   "END_CONVERSATION": "結束對話",
   "CONTINUE_CONVERSATION": "繼續對話",
-  "YOU": "You",
+  "YOU": "您",
   "START_NEW_CONVERSATION": "開始一個新對話",
-  "VIEW_UNREAD_MESSAGES": "You have unread messages",
+  "VIEW_UNREAD_MESSAGES": "您有未讀訊息",
   "UNREAD_VIEW": {
     "VIEW_MESSAGES_BUTTON": "查看新訊息",
     "CLOSE_MESSAGES_BUTTON": "關閉",
@@ -149,5 +149,9 @@
   },
   "FOOTER_REPLY_TO": {
     "REPLY_TO": "回覆:"
+  },
+  "NETWORK": {
+    "OFFLINE_RETRYING": "網路連線已中斷，正在嘗試重新連線...",
+    "RECONNECTED": "網路連線已恢復"
   }
 }

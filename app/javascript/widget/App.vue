@@ -40,6 +40,8 @@ export default {
     return {
       isMobile: false,
       campaignsSnoozedTill: undefined,
+      isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+      reconnected: false,
     };
   },
   computed: {
@@ -98,6 +100,13 @@ export default {
     this.$store.dispatch('conversationAttributes/getAttributes');
     this.registerUnreadEvents();
     this.registerCampaignEvents();
+
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
+  },
+  unmounted() {
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
   },
   methods: {
     ...mapActions('appConfig', [
@@ -345,6 +354,17 @@ export default {
         this.campaignsSnoozedTill = Number(snoozedTill);
       }
     },
+    handleOffline() {
+      this.isOffline = true;
+      this.reconnected = false;
+    },
+    handleOnline() {
+      this.isOffline = false;
+      this.reconnected = true;
+      setTimeout(() => {
+        this.reconnected = false;
+      }, 3000);
+    },
   },
 };
 </script>
@@ -352,14 +372,14 @@ export default {
 <template>
   <div
     v-if="!conversationSize && isFetchingList"
-    class="flex items-center justify-center flex-1 h-full bg-n-background"
+    class="flex items-center justify-center flex-1 h-full bg-n-background relative"
     :class="{ dark: prefersDarkMode }"
   >
     <Spinner size="" />
   </div>
   <div
     v-else
-    class="flex flex-col justify-end h-full"
+    class="flex flex-col justify-end h-full relative overflow-hidden"
     :class="{
       'is-mobile': isMobile,
       'is-widget-right': isRightAligned,
@@ -368,6 +388,31 @@ export default {
       dark: prefersDarkMode,
     }"
   >
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="-translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="-translate-y-full opacity-0"
+    >
+      <div
+        v-if="isOffline"
+        key="offline"
+        class="absolute top-0 inset-x-0 z-50 bg-amber-500 text-white text-xs py-1.5 px-3 text-center font-medium shadow-sm flex items-center justify-center gap-1.5"
+      >
+        <span class="inline-block w-2 h-2 rounded-full bg-white animate-ping" />
+        {{ $t('NETWORK.OFFLINE_RETRYING') }}
+      </div>
+      <div
+        v-else-if="reconnected"
+        key="reconnected"
+        class="absolute top-0 inset-x-0 z-50 bg-emerald-500 text-white text-xs py-1.5 px-3 text-center font-medium shadow-sm flex items-center justify-center gap-1.5"
+      >
+        <span>✓</span>
+        {{ $t('NETWORK.RECONNECTED') }}
+      </div>
+    </transition>
     <router-view />
   </div>
 </template>

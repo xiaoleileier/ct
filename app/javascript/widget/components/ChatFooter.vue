@@ -50,8 +50,18 @@ export default {
         return channelQuestions;
       }
       return this.isChinese
-        ? ['业务收费方案', '常见使用问题', '转接人工客服']
-        : ['Pricing & Plans', 'Frequently Asked Questions', 'Talk to an Agent'];
+        ? [
+            '节点无法连接排查',
+            '客户端配置订阅教程',
+            '续费与流量到账查询',
+            '转接人工客服',
+          ]
+        : [
+            'Node Connection Troubleshoot',
+            'Client Subscription Setup',
+            'Renewal & Traffic Balance',
+            'Talk to an Agent',
+          ];
     },
     textColor() {
       return getContrastingTextColor(this.widgetColor);
@@ -132,6 +142,7 @@ export default {
   <footer
     v-if="!hideReplyBox"
     class="relative z-50 mb-1"
+    :style="{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)' }"
     :class="{
       'rounded-lg': !isWidgetStyleFlat,
       'pt-2.5 shadow-[0px_-20px_20px_1px_rgba(0,_0,_0,_0.05)] dark:shadow-[0px_-20px_20px_1px_rgba(0,_0,_0,_0.15)] rounded-t-none':

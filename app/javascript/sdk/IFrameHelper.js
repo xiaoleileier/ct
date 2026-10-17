@@ -4,6 +4,7 @@ import {
   loadCSS,
   removeClasses,
   onLocationChangeListener,
+  injectPreconnect,
 } from './DOMHelpers';
 import {
   body,
@@ -59,7 +60,12 @@ export const IFrameHelper = {
       return;
     }
 
+    injectPreconnect(baseUrl);
     loadCSS();
+
+    const initialColor = window.chatwootSettings?.widgetColor || '#1f93ff';
+    IFrameHelper.initBubble(initialColor);
+
     const iframe = document.createElement('iframe');
     const cwCookie = Cookies.get('cw_conversation');
     let widgetUrl = IFrameHelper.getUrl({ baseUrl, websiteToken });
@@ -296,11 +302,7 @@ export const IFrameHelper = {
     IFrameHelper.sendMessage('push-event', { eventName });
   },
 
-  onLoad: ({ widgetColor }) => {
-    const iframe = IFrameHelper.getAppFrame();
-    iframe.style.visibility = '';
-    iframe.setAttribute('id', `chatwoot_live_chat_widget`);
-
+  initBubble: (initialColor = '#1f93ff') => {
     if (IFrameHelper.getBubbleHolder().length) {
       return;
     }
@@ -315,7 +317,7 @@ export const IFrameHelper = {
       closeBtnClassName += ' woot-widget-bubble--flat';
     }
 
-    if (isWidgetColorLighter(widgetColor)) {
+    if (isWidgetColorLighter(initialColor)) {
       className += ' woot-widget-bubble-color--lighter';
       closeBtnClassName += ' woot-widget-bubble-color--lighter';
     }
@@ -328,12 +330,31 @@ export const IFrameHelper = {
 
     addClasses(closeBubble, closeBtnClassName);
 
-    chatIcon.style.background = widgetColor;
-    closeBubble.style.background = widgetColor;
+    chatIcon.style.background = initialColor;
+    closeBubble.style.background = initialColor;
 
     bubbleHolder.appendChild(chatIcon);
     bubbleHolder.appendChild(closeBubble);
     onClickChatBubble();
+  },
+
+  onLoad: ({ widgetColor }) => {
+    const iframe = IFrameHelper.getAppFrame();
+    if (iframe) {
+      iframe.style.visibility = '';
+      iframe.setAttribute('id', `chatwoot_live_chat_widget`);
+    }
+
+    if (!IFrameHelper.getBubbleHolder().length) {
+      IFrameHelper.initBubble(widgetColor);
+    } else if (widgetColor) {
+      chatBubble.style.background = widgetColor;
+      closeBubble.style.background = widgetColor;
+      if (isWidgetColorLighter(widgetColor)) {
+        addClasses(chatBubble, 'woot-widget-bubble-color--lighter');
+        addClasses(closeBubble, 'woot-widget-bubble-color--lighter');
+      }
+    }
   },
   toggleCloseButton: () => {
     let isMobile = false;

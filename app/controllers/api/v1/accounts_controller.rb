@@ -97,7 +97,7 @@ class Api::V1::AccountsController < Api::BaseController
     merged = params.merge(nested)
     merged.permit(
       :auto_resolve_after, :auto_resolve_message, :auto_resolve_ignore_waiting, :audio_transcriptions, :auto_resolve_label,
-      :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled
+      :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled, :widget_hot_questions
     )
   end
 

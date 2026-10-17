@@ -43,6 +43,64 @@ class Webhooks::TelegramRelayController < ActionController::API
     elsif ['/info', '/user', '/profile'].include?(text.downcase)
       Telegram::ForumRelayService.new(conversation: conversation).send_initial_profile_card(thread_id)
       return head :ok
+    elsif text.downcase.start_with?('/note ', '/备注 ')
+      note_content = text.sub(%r{^/(note|备注)\s+}i, '').strip
+      if note_content.present?
+        agent = conversation.assignee || conversation.account.users.first
+        conversation.messages.create!(
+          account: conversation.account,
+          inbox: conversation.inbox,
+          message_type: :activity,
+          private: true,
+          content: note_content,
+          sender: agent
+        )
+        bot_token = Telegram::ForumRelayService.bot_token(conversation.account)
+        group_id = Telegram::ForumRelayService.group_id(conversation.account)
+        HTTParty.post("https://api.telegram.org/bot#{bot_token}/sendMessage", body: {
+          chat_id: group_id,
+          message_thread_id: thread_id,
+          text: "📝 <b>内部备注已记录 (仅客服可见)</b>:\n#{CGI.escapeHTML(note_content)}",
+          parse_mode: 'HTML'
+        })
+      end
+      return head :ok
+    elsif text.downcase.start_with?('/tag ', '/label ', '/标签 ')
+      tag_content = text.sub(%r{^/(tag|label|标签)\s+}i, '').strip
+      if tag_content.present?
+        labels = tag_content.split(/[,，\s]+/).map(&:strip).reject(&:blank?)
+        conversation.add_labels(labels)
+        bot_token = Telegram::ForumRelayService.bot_token(conversation.account)
+        group_id = Telegram::ForumRelayService.group_id(conversation.account)
+        HTTParty.post("https://api.telegram.org/bot#{bot_token}/sendMessage", body: {
+          chat_id: group_id,
+          message_thread_id: thread_id,
+          text: "🏷️ <b>已添加会话标签</b>: #{CGI.escapeHTML(labels.join(', '))}",
+          parse_mode: 'HTML'
+        })
+      end
+      return head :ok
+    elsif ['/help', '/帮助'].include?(text.downcase)
+      bot_token = Telegram::ForumRelayService.bot_token(conversation.account)
+      group_id = Telegram::ForumRelayService.group_id(conversation.account)
+      help_text = <<~HELP.strip
+        💡 <b>Telegram 客服快捷指令指南</b>
+
+        • <b>直接回复</b>: 发送文字/图片/表情/语音/文件，直接同步回复客户
+        • <code>/info</code>: 重新调出客户画像与订阅属性卡片
+        • <code>/note &lt;内容&gt;</code> 或 <code>/备注 &lt;内容&gt;</code>: 添加内部私密备注 (仅客服可见)
+        • <code>/tag &lt;标签&gt;</code>: 为当前会话添加标签 (例如 <code>/tag 节点故障</code>)
+        • <code>/resolve</code> 或 <code>/close</code>: 解决并关闭当前话题 (自动触发客户满意度评价)
+        • <code>/reopen</code>: 重新打开当前话题
+        • <code>/help</code>: 查看此帮助菜单
+      HELP
+      HTTParty.post("https://api.telegram.org/bot#{bot_token}/sendMessage", body: {
+        chat_id: group_id,
+        message_thread_id: thread_id,
+        text: help_text,
+        parse_mode: 'HTML'
+      })
+      return head :ok
     end
 
     process_telegram_reply(conversation, msg)

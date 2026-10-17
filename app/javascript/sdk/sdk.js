@@ -77,17 +77,37 @@ export const SDK_CSS = `
   top: 16px;
 }
 
+@keyframes woot-pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(255, 64, 64, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+  }
+}
+
 .woot-widget-bubble.unread-notification::after {
   content: '';
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   background: #ff4040;
   border-radius: 100%;
-  top: 0px;
-  right: 0px;
+  top: 1px;
+  right: 1px;
   border: 2px solid #ffffff;
-  transition: background 0.2s ease;
+  animation: woot-pulse-ring 2s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.woot-widget-bubble:active {
+  transform: scale(0.92);
+  transition: transform 0.1s ease;
 }
 
 .woot-widget-bubble.woot-widget--expanded {

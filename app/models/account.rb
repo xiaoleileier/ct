@@ -40,7 +40,8 @@ class Account < ApplicationRecord
         'auto_resolve_label': { 'type': %w[string null] },
         'telegram_relay_bot_token': { 'type': %w[string null] },
         'telegram_relay_group_id': { 'type': %w[string null] },
-        'telegram_relay_enabled': { 'type': %w[boolean null] }
+        'telegram_relay_enabled': { 'type': %w[boolean null] },
+        'widget_hot_questions': { 'type': %w[string array null] }
       },
     'required': [],
     'additionalProperties': true
@@ -58,7 +59,7 @@ class Account < ApplicationRecord
 
   store_accessor :settings, :auto_resolve_after, :auto_resolve_message, :auto_resolve_ignore_waiting
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
-  store_accessor :settings, :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled
+  store_accessor :settings, :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled, :widget_hot_questions
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async
@@ -157,9 +158,19 @@ class Account < ApplicationRecord
   def locale_english_name
     # the locale can also be something like pt_BR, en_US, fr_FR, etc.
     # the format is `<locale_code>_<country_code>`
-    # we need to extract the language code from the locale
     account_locale = locale&.split('_')&.first
     ISO_639.find(account_locale)&.english_name&.downcase || 'english'
+  end
+
+  def custom_hot_questions
+    val = settings['widget_hot_questions']
+    if val.is_a?(Array)
+      val.map(&:to_s).map(&:strip).reject(&:blank?)
+    elsif val.is_a?(String)
+      val.split(/[\n,，]/).map(&:strip).reject(&:blank?)
+    else
+      []
+    end
   end
 
   private

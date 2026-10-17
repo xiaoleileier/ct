@@ -173,6 +173,10 @@ export default {
         this.telegramRelayBotToken = s.telegram_relay_bot_token || '';
         this.telegramRelayGroupId = s.telegram_relay_group_id || '';
         this.telegramRelayEnabled = s.telegram_relay_enabled ?? false;
+
+        if (this.telegramRelayBotToken) {
+          this.testTelegramConnection(true);
+        }
       } catch (error) {
         // Ignore error
       }
@@ -452,15 +456,23 @@ export default {
             <li>
               <b>填写群组 ID 并激活</b>：将群组 ID（超级群组 ID 必须以 <code>-100</code> 开头）填入下方「群组 ID」，点击「保存 Telegram 配置」，再点击「一键激活 Webhook」。
             </li>
+            <li>
+              <b>实用技巧</b>：在 TG 话题内发送 <code>/close</code> 或直接在 TG 关闭话题，系统会自动标记会话已解决；在后台重新打开会话，TG 话题也会自动重新打开。
+            </li>
           </ol>
         </div>
 
         <!-- Telegram Settings Form -->
         <form class="grid gap-4" @submit.prevent="saveTelegramRelay">
-          <WithLabel
-            :label="$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.LABEL')"
-            name="telegramRelayBotToken"
-          >
+          <!-- Bot Token Input -->
+          <div class="space-y-1.5">
+            <label class="flex items-center justify-between text-sm font-medium text-n-slate-12">
+              <span class="flex items-center gap-1.5">
+                <span>🤖</span>
+                <span>{{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.LABEL') }}</span>
+              </span>
+              <span class="text-xs text-n-slate-10">从 @BotFather 获取</span>
+            </label>
             <NextInput
               v-model="telegramRelayBotToken"
               type="text"
@@ -469,15 +481,20 @@ export default {
                 $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.PLACEHOLDER')
               "
             />
-            <template #help>
+            <p class="text-xs text-n-slate-10 leading-normal">
               {{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.BOT_TOKEN.HELP') }}
-            </template>
-          </WithLabel>
+            </p>
+          </div>
 
-          <WithLabel
-            :label="$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.LABEL')"
-            name="telegramRelayGroupId"
-          >
+          <!-- Group ID Input -->
+          <div class="space-y-1.5">
+            <label class="flex items-center justify-between text-sm font-medium text-n-slate-12">
+              <span class="flex items-center gap-1.5">
+                <span>👥</span>
+                <span>{{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.LABEL') }}</span>
+              </span>
+              <span class="text-xs text-n-slate-10">以 -100 开头</span>
+            </label>
             <NextInput
               v-model="telegramRelayGroupId"
               type="text"
@@ -486,10 +503,10 @@ export default {
                 $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.PLACEHOLDER')
               "
             />
-            <template #help>
+            <p class="text-xs text-n-slate-10 leading-normal">
               {{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.HELP') }}
-            </template>
-          </WithLabel>
+            </p>
+          </div>
 
           <!-- Status & Diagnostic Details -->
           <div

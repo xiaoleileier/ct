@@ -32,6 +32,7 @@ class Telegram::ForumRelayService
     return if message.source_id&.start_with?('telegram_')
     return if message.private?
 
+    conversation.reload
     topic_id = conversation.additional_attributes['telegram_topic_id']
 
     if topic_id.blank?
@@ -145,7 +146,8 @@ class Telegram::ForumRelayService
       📥 <b>接入渠道</b>: #{CGI.escapeHTML(inbox.name)}
       🔗 <a href="#{conv_url}">点击在客服后台打开此会话</a>
       ━━━━━━━━━━━━━━━━━━━━
-      💡 <i>提示: 在此话题内直接回复文字、表情或图片，将直接发送给网站访客！</i>
+      💡 <i>提示: 在此话题直接回复文字、图片或附件即可同步给客户。
+      发送 <code>/close</code> 或关闭话题可直接结束并解决该会话。</i>
     HTML
 
     HTTParty.post(self.class.api_url('sendMessage', account), body: {
@@ -166,13 +168,30 @@ class Telegram::ForumRelayService
                     end
 
     if message.content.present?
-      text = "#{sender_prefix}#{CGI.escapeHTML(message.content)}"
-      HTTParty.post(self.class.api_url('sendMessage', account), body: {
+      text = "#{sender_prefix}#{CGI.escapeHTML(message.content)}".truncate(4000, omission: '... (消息过长已截断)')
+      res = HTTParty.post(self.class.api_url('sendMessage', account), body: {
         chat_id: self.class.group_id(account),
         message_thread_id: topic_id,
         text: text,
         parse_mode: 'HTML'
       })
+
+      # Auto-heal: If topic was deleted or closed in Telegram, recreate and re-send
+      if res.parsed_response.is_a?(Hash) && res.parsed_response['error_code'] == 400 &&
+         res.parsed_response['description']&.include?('message thread not found')
+        Rails.logger.warn "Telegram topic #{topic_id} not found, recreating forum topic..."
+        new_topic_id = create_topic!
+        if new_topic_id.present?
+          send_initial_profile_card(new_topic_id)
+          HTTParty.post(self.class.api_url('sendMessage', account), body: {
+            chat_id: self.class.group_id(account),
+            message_thread_id: new_topic_id,
+            text: text,
+            parse_mode: 'HTML'
+          })
+          topic_id = new_topic_id
+        end
+      end
     end
 
     relay_attachments(topic_id) if message.attachments.present?
@@ -183,7 +202,7 @@ class Telegram::ForumRelayService
       if att.image?
         send_telegram_file('sendPhoto', :photo, att, topic_id)
       elsif att.audio?
-        send_telegram_file('sendVoice', :voice, att, topic_id)
+        send_telegram_file('sendAudio', :audio, att, topic_id)
       elsif att.video?
         send_telegram_file('sendVideo', :video, att, topic_id)
       else

@@ -121,6 +121,33 @@
       "FEATURES": {
         "INBOUND_EMAIL_ENABLED": "您的帳戶啟用了電子信箱與對話的持續性功能。",
         "CUSTOM_EMAIL_DOMAIN_ENABLED": "您現在可以在您的自定義域名的電子信箱中接收消息。"
+      },
+      "TELEGRAM_RELAY": {
+        "TITLE": "Telegram 話題群客服轉發機器人",
+        "NOTE": "將客戶諮詢消息即時同步到 Telegram 論壇超級群組（Forum Topics）。新諮詢自動創建獨立話題，群內成員直接回復文字、圖片、表情即可即時同步給客戶。",
+        "ENABLE_LABEL": "啟用 Telegram 話題轉發",
+        "BOT_TOKEN": {
+          "LABEL": "Telegram 機器人 Token (Bot Token)",
+          "PLACEHOLDER": "例如: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ",
+          "HELP": "在 Telegram 中通過 @BotFather 創建機器人並獲取此 Token。"
+        },
+        "GROUP_ID": {
+          "LABEL": "Telegram 群組 ID (Group ID)",
+          "PLACEHOLDER": "例如: -1001234567890",
+          "HELP": "開啟了 Topics 話題功能的超級群組 ID（以 -100 開頭）。請確保機器人已加入該群並被賦予管理員權限（需包含 Manage Topics 話題管理權限）。"
+        },
+        "UPDATE_BUTTON": "保存 Telegram 配置",
+        "SETUP_WEBHOOK": "一鍵激活 Webhook",
+        "TEST_CONNECTION": "測試連接與狀態",
+        "WEBHOOK_INFO": "Webhook 地址：",
+        "STATUS_CONNECTED": "已成功連接至 Telegram 機器人：@{botName}",
+        "STATUS_ERROR": "連接 Telegram 失敗，請檢查 Bot Token 是否正確。",
+        "API": {
+          "SUCCESS": "Telegram 機器人配置保存成功",
+          "ERROR": "保存 Telegram 機器人配置失敗",
+          "WEBHOOK_SUCCESS": "Telegram Webhook 註冊成功！機器人已就緒。",
+          "WEBHOOK_ERROR": "註冊 Telegram Webhook 失敗，請檢查 Bot Token 是否有效。"
+        }
       }
     },
     "UPDATE_CHATWOOT": "An update {latestChatwootVersion} for Chatwoot is available. Please update your instance.",

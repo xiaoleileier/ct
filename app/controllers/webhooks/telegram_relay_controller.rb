@@ -19,6 +19,29 @@ class Webhooks::TelegramRelayController < ActionController::API
     expected_group_id = Telegram::ForumRelayService.group_id(account).to_s
     return head :ok unless chat_id == expected_group_id
 
+    # Sync forum topic closed / reopened actions from Telegram to Chatwoot
+    if msg[:forum_topic_closed].present?
+      conversation.resolved! unless conversation.resolved?
+      return head :ok
+    end
+
+    if msg[:forum_topic_reopened].present?
+      conversation.open! unless conversation.open?
+      return head :ok
+    end
+
+    # Support /resolve, /close, /reopen commands inside topic
+    text = (msg[:text] || msg[:caption]).to_s.strip
+    if ['/resolve', '/close'].include?(text.downcase)
+      conversation.resolved! unless conversation.resolved?
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      return head :ok
+    elsif ['/reopen', '/open'].include?(text.downcase)
+      conversation.open! unless conversation.open?
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      return head :ok
+    end
+
     process_telegram_reply(conversation, msg)
 
     head :ok
@@ -56,7 +79,9 @@ class Webhooks::TelegramRelayController < ActionController::API
     return render json: { configured: false, error: '尚未配置 Telegram 机器人 Token' } if bot_token.blank?
 
     bot_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMe")
-    return render json: { configured: false, ok: false, error: "Bot Token 无效: #{bot_res.parsed_response['description']}" } unless bot_res.parsed_response['ok']
+    unless bot_res.parsed_response['ok']
+      return render json: { configured: false, ok: false, error: "Bot Token 无效: #{bot_res.parsed_response['description']}" }
+    end
 
     bot_info = bot_res.parsed_response['result']
     webhook_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getWebhookInfo").parsed_response['result']
@@ -66,7 +91,8 @@ class Webhooks::TelegramRelayController < ActionController::API
       chat_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getChat?chat_id=#{group_id}").parsed_response
       if chat_res['ok']
         chat = chat_res['result']
-        member_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getChatMember?chat_id=#{group_id}&user_id=#{bot_info['id']}").parsed_response
+        member_url = "https://api.telegram.org/bot#{bot_token}/getChatMember?chat_id=#{group_id}&user_id=#{bot_info['id']}"
+        member_res = HTTParty.get(member_url).parsed_response
 
         member = member_res['result'] if member_res['ok']
         status = member&.[]('status')

@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
 class Telegram::ForumRelayService
-  pattr_initialize [:message!]
+  def initialize(message: nil, conversation: nil)
+    @message = message
+    @conversation = conversation || message&.conversation
+  end
+
+  attr_reader :message, :conversation
 
   def self.configured?(account = nil)
     bot_token(account).present? && group_id(account).present? && enabled?(account)
@@ -130,24 +135,38 @@ class Telegram::ForumRelayService
   end
 
   def send_initial_profile_card(topic_id)
+    contact.reload rescue nil
+    conversation.reload rescue nil
+
     frontend_url = ENV['FRONTEND_URL'].presence || 'http://localhost:3000'
     conv_url = "#{frontend_url}/app/accounts/#{account.id}/conversations/#{conversation.display_id}"
 
+    # Smart email detection
+    email = contact.email.presence ||
+            (contact.name.to_s.match?(URI::MailTo::EMAIL_REGEXP) ? contact.name : nil) ||
+            (contact.identifier.to_s.match?(URI::MailTo::EMAIL_REGEXP) ? contact.identifier : nil) ||
+            (contact.custom_attributes&.dig('user_id').to_s.presence if contact.custom_attributes&.dig('user_id').to_s.match?(URI::MailTo::EMAIL_REGEXP))
+
+    contact.update(email: email) if contact.email.blank? && email.present? rescue nil
+
     location = [contact.additional_attributes&.dig('city'), contact.additional_attributes&.dig('country_name')].compact.join(', ')
     location_line = location.present? ? "🌍 <b>地理位置</b>: #{CGI.escapeHTML(location)}\n" : ''
+
+    attr_lines = format_contact_attributes(email)
+    attr_section = attr_lines.present? ? "#{attr_lines.join("\n")}\n" : ''
 
     card_text = <<~HTML
       🎉 <b>新客户咨询发起 (会话 ##{conversation.display_id})</b>
       ━━━━━━━━━━━━━━━━━━━━
       👤 <b>客户姓名</b>: #{CGI.escapeHTML(contact.name.presence || '新访客')}
+      📧 <b>电子邮箱</b>: #{CGI.escapeHTML(email.presence || '未留')}
       📱 <b>联系电话</b>: #{contact.phone_number.presence || '未留'}
-      📧 <b>电子邮箱</b>: #{contact.email.presence || '未留'}
-      #{location_line}🌐 <b>来源页面</b>: #{CGI.escapeHTML(conversation.additional_attributes['referer'].to_s.presence || '直接访问')}
+      #{attr_section}#{location_line}🌐 <b>来源页面</b>: #{CGI.escapeHTML(conversation.additional_attributes['referer'].to_s.presence || '直接访问')}
       📥 <b>接入渠道</b>: #{CGI.escapeHTML(inbox.name)}
       🔗 <a href="#{conv_url}">点击在客服后台打开此会话</a>
       ━━━━━━━━━━━━━━━━━━━━
-      💡 <i>提示: 在此话题直接回复文字、图片或附件即可同步给客户。
-      发送 <code>/close</code> 或关闭话题可直接结束并解决该会话。</i>
+      💡 <i>提示: 在此话题直接回复文字、图片、表情或贴纸即可同步给客户。
+      发送 <code>/info</code> 刷新客户属性，发送 <code>/close</code> 解决该会话。</i>
     HTML
 
     HTTParty.post(self.class.api_url('sendMessage', account), body: {
@@ -157,6 +176,64 @@ class Telegram::ForumRelayService
       parse_mode: 'HTML',
       disable_web_page_preview: true
     })
+  end
+
+  def format_contact_attributes(email)
+    lines = []
+    ca = contact.custom_attributes || {}
+
+    # User ID / Identifier (if distinct from email and name)
+    uid = contact.identifier.presence || ca['user_id'].presence
+    lines << "🆔 <b>用户 ID</b>: #{CGI.escapeHTML(uid.to_s)}" if uid.present? && uid != email && uid != contact.name
+
+    # 1. Plan / Subscription
+    lines << "💎 <b>当前套餐</b>: #{CGI.escapeHTML(ca['plan'].to_s)}" if ca['plan'].present?
+
+    # 2. Balance / Money
+    lines << "💰 <b>账户余额</b>: #{CGI.escapeHTML(ca['balance'].to_s)}" if ca['balance'].present?
+
+    # 3. Traffic usage (formatted: used / total (remaining, percent))
+    if ca['used_traffic'].present? || ca['total_traffic'].present?
+      traffic_str = [ca['used_traffic'], ca['total_traffic']].compact.join(' / ')
+      extra_traffic = []
+      extra_traffic << "剩余 #{ca['remaining_traffic']}" if ca['remaining_traffic'].present?
+      extra_traffic << "#{ca['traffic_percent']}%" if ca['traffic_percent'].present?
+      traffic_str += " (#{extra_traffic.join(', ')})" if extra_traffic.present?
+      lines << "📊 <b>流量使用</b>: #{CGI.escapeHTML(traffic_str)}"
+    end
+
+    # 4. Expiration date
+    lines << "⏳ <b>到期时间</b>: #{CGI.escapeHTML(ca['expire_time'].to_s)}" if ca['expire_time'].present?
+
+    # 5. Account status
+    lines << "🟢 <b>账户状态</b>: #{CGI.escapeHTML(ca['account_status'].to_s)}" if ca['account_status'].present?
+
+    # 6. Site / Airport name
+    lines << "🏢 <b>所属站点</b>: #{CGI.escapeHTML(ca['site_name'].to_s)}" if ca['site_name'].present?
+
+    # 7. Device / Platform
+    device_info = [ca['device_platform'], ca['app_version'] || ca['device_name']].compact.join(' / ')
+    lines << "💻 <b>设备系统</b>: #{CGI.escapeHTML(device_info)}" if device_info.present?
+
+    # 8. Registration date
+    lines << "📅 <b>注册时间</b>: #{CGI.escapeHTML(ca['registered_at'].to_s)}" if ca['registered_at'].present?
+
+    # 9. Other custom attributes defined on the account
+    known_keys = %w[
+      plan balance used_traffic total_traffic remaining_traffic traffic_percent
+      expire_time account_status site_name device_platform device_name
+      app_version registered_at user_id last_sync_at app_channel
+    ]
+    definitions = account.custom_attribute_definitions.where(attribute_model: :contact_attribute).index_by(&:attribute_key)
+
+    ca.each do |k, v|
+      next if known_keys.include?(k) || v.blank?
+
+      label = definitions[k]&.attribute_display_name || k.to_s.humanize
+      lines << "🏷️ <b>#{CGI.escapeHTML(label)}</b>: #{CGI.escapeHTML(v.to_s)}"
+    end
+
+    lines
   end
 
   def relay_message(topic_id)

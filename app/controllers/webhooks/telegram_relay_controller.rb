@@ -40,6 +40,9 @@ class Webhooks::TelegramRelayController < ActionController::API
       conversation.open! unless conversation.open?
       Telegram::ForumRelayService.handle_conversation_status_change(conversation)
       return head :ok
+    elsif ['/info', '/user', '/profile'].include?(text.downcase)
+      Telegram::ForumRelayService.new(conversation: conversation).send_initial_profile_card(thread_id)
+      return head :ok
     end
 
     process_telegram_reply(conversation, msg)
@@ -137,9 +140,7 @@ class Webhooks::TelegramRelayController < ActionController::API
     video = msg[:video]
     location = msg[:location]
 
-    if sticker.present? && text.blank?
-      text = sticker[:emoji].presence || '[贴纸表情]'
-    elsif location.present? && text.blank?
+    if location.present? && text.blank?
       text = "📍 位置: 纬度 #{location[:latitude]}, 经度 #{location[:longitude]}"
     end
 
@@ -147,6 +148,8 @@ class Webhooks::TelegramRelayController < ActionController::API
 
     default_content = if photo_array.present?
                         '[图片]'
+                      elsif sticker.present?
+                        sticker[:emoji].presence || '[贴纸表情]'
                       elsif voice.present? || audio.present?
                         '[语音消息]'
                       elsif video.present?
@@ -165,9 +168,16 @@ class Webhooks::TelegramRelayController < ActionController::API
     )
 
     attach_photo(message, photo_array) if photo_array.present?
+    attach_sticker(message, sticker) if sticker.present?
     attach_document(message, document) if document.present?
     attach_voice(message, voice || audio) if (voice || audio).present?
     attach_video(message, video) if video.present?
+
+    # If visual media (photo or sticker) was attached and no custom text was typed,
+    # clear content so it renders cleanly as visual media without a redundant text bubble
+    if message.attachments.any?(&:image?) && (msg[:text].blank? && msg[:caption].blank?)
+      message.content = nil
+    end
 
     message.save!
   end
@@ -177,6 +187,22 @@ class Webhooks::TelegramRelayController < ActionController::API
     return unless best_photo
 
     download_and_attach(message, best_photo[:file_id], :image)
+  end
+
+  def attach_sticker(message, sticker)
+    return unless sticker
+
+    # Telegram stickers provide thumbnail (or thumb in older API) which is always a valid webp/jpg image.
+    # For static webp stickers, file_id itself is a valid webp image.
+    best_file_id = if sticker[:is_animated] || sticker[:is_video]
+                     sticker.dig(:thumbnail, :file_id) || sticker.dig(:thumb, :file_id)
+                   else
+                     sticker[:file_id] || sticker.dig(:thumbnail, :file_id) || sticker.dig(:thumb, :file_id)
+                   end
+
+    return unless best_file_id
+
+    download_and_attach(message, best_file_id, :image, "sticker_#{best_file_id}.webp")
   end
 
   def attach_document(message, document)
@@ -210,6 +236,7 @@ class Webhooks::TelegramRelayController < ActionController::API
 
     filename = custom_filename || downloaded_file.original_filename || "telegram_#{file_id}"
     content_type = downloaded_file.content_type || 'application/octet-stream'
+    content_type = 'image/webp' if filename.ends_with?('.webp') && content_type == 'application/octet-stream'
 
     message.attachments.new(
       account_id: message.account_id,

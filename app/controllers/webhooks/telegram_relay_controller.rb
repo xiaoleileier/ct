@@ -52,7 +52,7 @@ class Webhooks::TelegramRelayController < ActionController::API
 
   def setup_webhook
     account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
-    bot_token = Telegram::ForumRelayService.bot_token(account)
+    bot_token = params[:bot_token].presence || Telegram::ForumRelayService.bot_token(account)
     return render json: { ok: false, error: '未配置 Telegram 机器人 Token' }, status: :unprocessable_entity if bot_token.blank?
 
     frontend_url = ENV.fetch('FRONTEND_URL', request.base_url)
@@ -74,9 +74,9 @@ class Webhooks::TelegramRelayController < ActionController::API
 
   def check_status
     account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
-    bot_token = Telegram::ForumRelayService.bot_token(account)
-    group_id = Telegram::ForumRelayService.group_id(account)
-    return render json: { configured: false, error: '尚未配置 Telegram 机器人 Token' } if bot_token.blank?
+    bot_token = params[:bot_token].presence || Telegram::ForumRelayService.bot_token(account)
+    group_id = params[:group_id].presence || Telegram::ForumRelayService.group_id(account)
+    return render json: { configured: false, ok: false, error: '尚未配置 Telegram 机器人 Token' } if bot_token.blank?
 
     bot_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMe")
     unless bot_res.parsed_response['ok']
@@ -122,7 +122,7 @@ class Webhooks::TelegramRelayController < ActionController::API
       group: group_check
     }
   rescue StandardError => e
-    render json: { configured: false, error: e.message }, status: :unprocessable_entity
+    render json: { configured: false, ok: false, error: e.message }
   end
 
   private

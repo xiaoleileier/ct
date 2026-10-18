@@ -17,6 +17,12 @@ as defined by the routes in the `admin/` namespace
     platform_apps: 'icon-apps-2-line',
     agent_bots: 'icon-robot-line',
   }
+  sidebar_labels = {
+    accounts: I18n.t('super_admin.navigation.accounts', default: '账户管理'),
+    users: I18n.t('super_admin.navigation.users', default: '用户管理'),
+    platform_apps: I18n.t('super_admin.navigation.platform_apps', default: '平台应用'),
+    agent_bots: I18n.t('super_admin.navigation.agent_bots', default: '机器人管理'),
+  }
 %>
 
 <div class="border-slate-100 border-r w-56 flex-shrink-0 justify-between h-full flex flex-col" role="navigation">
@@ -25,18 +31,18 @@ as defined by the routes in the `admin/` namespace
       <%= link_to image_tag('/brand-assets/logo_thumbnail.svg', alt: 'Chatwoot Admin Dashboard', class: 'h-10'), super_admin_root_url %>
       <div class="flex flex-col ml-3">
         <div class="text-sm">Chatwoot <%= Chatwoot.config[:version] %></div>
-        <div class="text-xs text-slate-700 mt-0.5">Super Admin Console</div>
+        <div class="text-xs text-slate-700 mt-0.5"><%= I18n.t('super_admin.navigation.console', default: '超级管理员控制台') %></div>
       </div>
     </div>
 
     <ul class="my-4">
-      <%= render partial: "nav_item", locals: { icon: 'icon-grid-line', url: super_admin_root_url, label: 'Dashboard' } %>
+      <%= render partial: "nav_item", locals: { icon: 'icon-grid-line', url: super_admin_root_url, label: I18n.t('super_admin.navigation.dashboard', default: '仪表盘') } %>
       <% Administrate::Namespace.new(namespace).resources.each do |resource| %>
         <% next if ["account_users", "access_tokens", "installation_configs", "dashboard", "devise/sessions", "app_configs", "instance_statuses", "settings"].include?  resource.resource %>
         <%= render partial: "nav_item", locals: {
             icon: sidebar_icons[resource.resource.to_sym],
             url: resource_index_route(resource),
-            label: display_resource_name(resource),
+            label: sidebar_labels[resource.resource.to_sym] || display_resource_name(resource),
           }
         %>
 
@@ -46,10 +52,10 @@ as defined by the routes in the `admin/` namespace
   </div>
   <div>
     <ul class="my-4">
-      <%= render partial: "nav_item", locals: { icon: 'icon-mist-fill', url: sidekiq_web_url, label: 'Sidekiq Dashboard' } %>
-      <%= render partial: "nav_item", locals: { icon: 'icon-health-book-line', url: super_admin_instance_status_url, label: 'Instance Health' } %>
-      <%= render partial: "nav_item", locals: { icon: 'icon-dashboard-line', url: '/', label: 'Agent Dashboard' } %>
-      <%= render partial: "nav_item", locals: { icon: 'icon-logout-circle-r-line', url: super_admin_logout_url, label: 'Logout' } %>
+      <%= render partial: "nav_item", locals: { icon: 'icon-mist-fill', url: sidekiq_web_url, label: I18n.t('super_admin.navigation.sidekiq', default: 'Sidekiq 异步队列') } %>
+      <%= render partial: "nav_item", locals: { icon: 'icon-health-book-line', url: super_admin_instance_status_url, label: I18n.t('super_admin.navigation.instance_health', default: '实例健康状态') } %>
+      <%= render partial: "nav_item", locals: { icon: 'icon-dashboard-line', url: '/', label: I18n.t('super_admin.navigation.agent_dashboard', default: '返回客服工作台') } %>
+      <%= render partial: "nav_item", locals: { icon: 'icon-logout-circle-r-line', url: super_admin_logout_url, label: I18n.t('super_admin.navigation.logout', default: '退出登录') } %>
     </ul>
   </div>
 </div>

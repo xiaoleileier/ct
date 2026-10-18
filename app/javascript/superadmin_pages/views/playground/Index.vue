@@ -87,7 +87,7 @@ export default {
       } catch (error) {
         this.addMessageToData(
           'bot',
-          'Error: Could not retrieve response. Please check the console for more details.'
+          '错误：无法获取回复，请检查控制台以了解详细信息。'
         );
       } finally {
         this.isWaiting = false;
@@ -124,7 +124,7 @@ export default {
         v-model="messageContent"
         :rows="4"
         class="resize-none block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border !outline-2 border-slate-100 focus:ring-woot-500 focus:border-woot-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-woot-500 dark:focus:border-woot-500"
-        placeholder="Type a message... [CMD/CTRL + Enter to send]"
+        placeholder="输入消息... [CMD/CTRL + Enter 发送]"
         autofocus
         autocomplete="off"
         @keydown.meta.enter="onMessageSend"

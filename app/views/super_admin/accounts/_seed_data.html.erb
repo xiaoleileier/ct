@@ -3,13 +3,13 @@
  <hr/>
   <%= form_for([:seed, namespace, page.resource], method: :post, html: { class: "form" }) do |f| %>
 
-  <div class="form-actions">
-    <div class="pb-3">
-      <p>Click the button to generate seed data into this account for demos.</p>
-      <p class="text-color-red">Note: This will clear all the existing data in this account.</p>
+    <div class="form-actions">
+      <div class="pb-3">
+        <p><%= t('super_admin.accounts.seed_data_desc', default: '点击按钮为该账户生成用于演示的测试种子数据。') %></p>
+        <p class="text-color-red"><%= t('super_admin.accounts.seed_data_note', default: '注意：这将清除此账户中的所有现有数据！') %></p>
+      </div>
+    <%= f.submit t('super_admin.accounts.generate_seed_data', default: '生成种子测试数据') %>
     </div>
-  <%= f.submit 'Generate Seed Data' %>
-  </div>
   <% end %>
 </section>
 <% end %>

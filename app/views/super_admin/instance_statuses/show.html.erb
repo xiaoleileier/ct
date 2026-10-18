@@ -1,5 +1,5 @@
 <% content_for(:title) do %>
-  Instance Status
+  <%= t('super_admin.instance_statuses.title', default: '实例状态') %>
 <% end %>
 <header class="main-content__header" role="banner">
   <h1 class="main-content__page-title" id="page-title">
@@ -9,8 +9,8 @@
 <section class="main-content__body">
   <table>
   <tr>
-    <th>Metric</th>
-    <th>Value</th>
+    <th><%= t('super_admin.instance_statuses.metric', default: '指标名称') %></th>
+    <th><%= t('super_admin.instance_statuses.value', default: '数值') %></th>
   </tr>
   <% @metrics.each do |key,value| %>
    <tr>

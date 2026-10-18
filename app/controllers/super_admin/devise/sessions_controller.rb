@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class SuperAdmin::Devise::SessionsController < Devise::SessionsController
+  include SwitchLocale
+  around_action :switch_locale
+
   def new
     self.resource = resource_class.new(sign_in_params)
   end
@@ -21,6 +24,10 @@ class SuperAdmin::Devise::SessionsController < Devise::SessionsController
 
   private
 
+  def locale_from_user
+    ENV.fetch('DEFAULT_LOCALE', 'zh_CN')
+  end
+
   def valid_credentials?
     @super_admin = SuperAdmin.find_by!(email: params[:super_admin][:email])
     raise StandardError, 'Invalid Password' unless @super_admin.valid_password?(params[:super_admin][:password])
@@ -28,7 +35,7 @@ class SuperAdmin::Devise::SessionsController < Devise::SessionsController
     true
   rescue StandardError => e
     Rails.logger.error e.message
-    @error_message = 'Invalid credentials. Please try again.'
+    @error_message = I18n.t('super_admin.devise.sessions.invalid_credentials', default: '邮箱或密码错误，请重试。')
     false
   end
 end

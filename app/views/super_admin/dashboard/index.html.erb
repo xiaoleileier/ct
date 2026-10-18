@@ -1,5 +1,5 @@
 <% content_for(:title) do %>
-  Admin Dashboard
+  <%= t('super_admin.dashboard.title', default: '仪表盘') %>
 <% end %>
 
 <%= render_vue_component('DashboardIndex', {

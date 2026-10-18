@@ -1,8 +1,8 @@
 <section class="main-content__body">
  <hr/>
   <div class="form-actions">
-  <p class="text-color-red">Caution: Any actions executed after impersonate will appear as if performed by the impersonated user - [<%= page.resource.name %> ]</p>
-    <a class='button' target='_blank' href='<%= page.resource.generate_sso_link_with_impersonation %>'>Impersonate user </a>
+  <p class="text-color-red"><%= t('super_admin.users.impersonate_caution', name: page.resource.name, default: "注意：模拟登录后执行的任何操作都将以被模拟用户 [#{page.resource.name}] 的身份进行。") %></p>
+    <a class='button' target='_blank' href='<%= page.resource.generate_sso_link_with_impersonation %>'><%= t('super_admin.users.impersonate_button', default: '模拟该用户登录') %></a>
   </div>
 </section>
 

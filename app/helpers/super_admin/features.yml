@@ -3,132 +3,132 @@
 
 # ------- Premium Features ------- #
 captain:
-  name: 'Captain'
-  description: 'Enable AI-powered conversations with your customers.'
+  name: 'Captain AI'
+  description: '为您的客户启用 AI 智能对话与客服助手。'
   enabled: <%= (ChatwootHub.pricing_plan != 'community') %>
   icon: 'icon-captain'
   config_key: 'captain'
   enterprise: true
 custom_branding:
-  name: 'Custom Branding'
-  description: 'Apply your own branding to this installation.'
+  name: '品牌自定义'
+  description: '自定义本系统的 Logo、名称与品牌标识。'
   enabled: <%= (ChatwootHub.pricing_plan != 'community') %>
   icon: 'icon-paint-brush-line'
   config_key: 'custom_branding'
   enterprise: true
 agent_capacity:
-  name: 'Agent Capacity'
-  description: 'Set limits to auto-assigning conversations to your agents.'
+  name: '客服容量上限'
+  description: '限制自动分配给客服的最大对话数量。'
   enabled: <%= (ChatwootHub.pricing_plan != 'community') %>
   icon: 'icon-hourglass-line'
   enterprise: true
 audit_logs:
-  name: 'Audit Logs'
-  description: 'Track and trace account activities with ease with detailed audit logs.'
+  name: '审计日志'
+  description: '通过详细审计日志轻松追踪账户操作记录。'
   enabled: <%= (ChatwootHub.pricing_plan != 'community') %>
   icon: 'icon-menu-search-line'
   enterprise: true
 disable_branding:
-  name: 'Disable Branding'
-  description: 'Disable branding on live-chat widget and external emails.'
+  name: '去除品牌水印'
+  description: '移除聊天挂件和对外邮件中的 Chatwoot 品牌标识。'
   enabled: <%= (ChatwootHub.pricing_plan != 'community') %>
   icon: 'icon-sailbot-fill'
   enterprise: true
 
 # ------- Product Features ------- #
 help_center:
-  name: 'Help Center'
-  description: 'Allow agents to create help center articles and publish them in a portal.'
+  name: '帮助中心'
+  description: '允许客服撰写帮助中心文章并发布到门户网站。'
   enabled: true
   icon: 'icon-book-2-line'
 
 # ------- Communication Channels ------- #
 live_chat:
-  name: 'Live Chat'
-  description: 'Improve your customer experience using a live chat on your website.'
+  name: '在线聊天挂件'
+  description: '通过网站上的实时聊天挂件提升客户体验。'
   enabled: true
   icon: 'icon-chat-smile-3-line'
 email:
-  name: 'Email'
-  description: 'Manage your email customer interactions from Chatwoot.'
+  name: '邮件渠道'
+  description: '在控制台中统一管理客户邮件往来。'
   enabled: true
   icon: 'icon-mail-send-fill'
   config_key: 'email'
 sms:
-  name: 'SMS'
-  description: 'Manage your SMS customer interactions from Chatwoot.'
+  name: '短信渠道 (SMS)'
+  description: '在控制台中统一管理客户短信交互。'
   enabled: true
   icon: 'icon-message-line'
 messenger:
   name: 'Messenger'
-  description: 'Stay connected with your customers on Facebook & Instagram.'
+  description: '连接 Facebook 与 Instagram 客户消息。'
   enabled: true
   icon: 'icon-messenger-line'
   config_key: 'facebook'
 instagram:
   name: 'Instagram'
-  description: 'Stay connected with your customers on Instagram'
+  description: '在控制台中与 Instagram 客户保持连接。'
   enabled: true
   icon: 'icon-instagram'
   config_key: 'instagram'
 whatsapp:
   name: 'WhatsApp'
-  description: 'Manage your WhatsApp business interactions from Chatwoot.'
+  description: '管理 WhatsApp Business 客户沟通。'
   enabled: true
   icon: 'icon-whatsapp-line'
 telegram:
   name: 'Telegram'
-  description: 'Manage your Telegram customer interactions from Chatwoot.'
+  description: '管理 Telegram 机器人与客户交互。'
   enabled: true
   icon: 'icon-telegram-line'
 line:
   name: 'Line'
-  description: 'Manage your Line customer interactions from Chatwoot.'
+  description: '管理 Line 官方账号客户沟通。'
   enabled: true
   icon: 'icon-line-line'
 
 # ------- OAuth & Authentication ------- #
 google:
-  name: 'Google'
-  description: 'Configuration for setting up Google OAuth Integration'
+  name: 'Google OAuth'
+  description: '配置 Google 登录与身份验证集成。'
   enabled: true
   icon: 'icon-google'
   config_key: 'google'
 microsoft:
-  name: 'Microsoft'
-  description: 'Configuration for setting up Microsoft Email'
+  name: 'Microsoft 邮件'
+  description: '配置 Microsoft 邮件与 OAuth 集成。'
   enabled: true
   icon: 'icon-microsoft'
   config_key: 'microsoft'
 
 # ------- Third-party Integrations ------- #
 linear:
-  name: 'Linear'
-  description: 'Configuration for setting up Linear Integration'
+  name: 'Linear 集成'
+  description: '配置 Linear 工单与问题跟踪集成。'
   enabled: true
   icon: 'icon-linear'
   config_key: 'linear'
 notion:
-  name: 'Notion'
-  description: 'Configuration for setting up Notion Integration'
+  name: 'Notion 集成'
+  description: '配置 Notion 知识库与数据集成。'
   enabled: true
   icon: 'icon-notion'
   config_key: 'notion'
 slack:
-  name: 'Slack'
-  description: 'Configuration for setting up Slack Integration'
+  name: 'Slack 集成'
+  description: '配置 Slack 内部协作与通知集成。'
   enabled: true
   icon: 'icon-slack'
   config_key: 'slack'
 whatsapp_embedded:
-  name: 'WhatsApp Embedded'
-  description: 'Configuration for setting up WhatsApp Embedded Integration'
+  name: 'WhatsApp 嵌入式接入'
+  description: '配置 WhatsApp Embedded 官方快速接入。'
   enabled: true
   icon: 'icon-whatsapp-line'
   config_key: 'whatsapp_embedded'
 shopify:
-  name: 'Shopify'
-  description: 'Configuration for setting up Shopify Integration'
+  name: 'Shopify 集成'
+  description: '配置 Shopify 电商店铺与客户订单同步。'
   enabled: true
   icon: 'icon-shopify'
   config_key: 'shopify'

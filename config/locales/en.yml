@@ -434,3 +434,173 @@ en:
       subject: 'Finish setting up %{custom_domain}'
     ssl_status:
       custom_domain_not_configured: 'Custom domain is not configured'
+  super_admin:
+    invalid_action: 'Invalid action performed'
+    navigation:
+      console: 'Super Admin Console'
+      dashboard: 'Dashboard'
+      accounts: 'Accounts'
+      users: 'Users'
+      platform_apps: 'Platform Apps'
+      agent_bots: 'Agent Bots'
+      settings: 'Settings'
+      sidekiq: 'Sidekiq Dashboard'
+      instance_health: 'Instance Health'
+      agent_dashboard: 'Agent Dashboard'
+      logout: 'Logout'
+    dashboard:
+      title: 'Admin Dashboard'
+    settings:
+      title: 'Settings'
+      general: 'General'
+      subtitle: 'Update your instance settings, access billing portal'
+      installation_identifier: 'Installation Identifier'
+      current_plan: 'Current plan'
+      refresh: 'Refresh'
+      manage: 'Manage'
+      need_help: 'Need help?'
+      need_help_desc: 'Do you face any issues? We are here to help.'
+      community_support: 'Community Support'
+      chat_support: 'Chat Support'
+      features: 'Features'
+      upgrade_now: 'Upgrade now'
+      switch_enterprise: 'Switch to Enterprise edition'
+      user_limit_exceeded: 'You have %{count} agents. Please add more licenses to add more users.'
+    app_configs:
+      title: 'Configure Settings - %{name}'
+      submit: 'Submit'
+      boolean_true: 'True'
+      boolean_false: 'False'
+    instance_statuses:
+      title: 'Instance Status'
+      metric: 'Metric'
+      value: 'Value'
+    users:
+      impersonate_caution: 'Caution: Any actions executed after impersonate will appear as if performed by the impersonated user - [%{name} ]'
+      impersonate_button: 'Impersonate user'
+    accounts:
+      seed_data_desc: 'Click the button to generate seed data into this account for demos.'
+      seed_data_note: 'Note: This will clear all the existing data in this account.'
+      generate_seed_data: 'Generate Seed Data'
+      reset_cache_desc: 'This will clear the IndexedDB cache keys from redis. <br>The next load will fetch the data from backend.'
+      reset_cache_button: 'Reset Frontend Cache'
+    devise:
+      sessions:
+        title: 'SuperAdmin | Chatwoot'
+        greeting: 'Howdy, admin 👋'
+        email: 'Email Address'
+        email_placeholder: 'Email eg: someone@example.com'
+        password: 'Password'
+        password_placeholder: 'Password'
+        login: 'Login'
+        invalid_credentials: 'Invalid credentials. Please try again.'
+  administrate:
+    filter:
+      by: 'Filter by'
+      all_records: 'All records'
+      clear: 'Clear filter'
+      common:
+        active: 'Active'
+        suspended: 'Suspended'
+        recent: 'Recent (Last 30 Days)'
+        confirmed: 'Confirmed'
+        unconfirmed: 'Unconfirmed'
+        super_admin: 'Super Admin'
+        marked_for_deletion: 'Marked for Deletion'
+    actions:
+      confirm: 'Are you sure?'
+      destroy: 'Destroy'
+      edit: 'Edit'
+      edit_resource: 'Edit %{name}'
+      show_resource: 'Show %{name}'
+      new_resource: 'New %{name}'
+    controller:
+      created: '%{name} was successfully created.'
+      updated: '%{name} was successfully updated.'
+      destroyed: '%{name} was successfully destroyed.'
+    form:
+      error: 'error'
+      errors: '%{pluralized_errors} prohibited this %{resource_name} from being saved:'
+    search:
+      clear: 'Clear search'
+      label: 'Search %{resource}'
+  activerecord:
+    models:
+      account:
+        one: 'Account'
+        other: 'Accounts'
+      user:
+        one: 'User'
+        other: 'Users'
+      platform_app:
+        one: 'Platform App'
+        other: 'Platform Apps'
+      agent_bot:
+        one: 'Agent Bot'
+        other: 'Agent Bots'
+      account_user:
+        one: 'Account User'
+        other: 'Account Users'
+      super_admin:
+        one: 'Super Admin'
+        other: 'Super Admins'
+  helpers:
+    label:
+      account:
+        id: 'Id'
+        name: 'Name'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+        users: 'Users'
+        conversations: 'Conversations'
+        locale: 'Locale'
+        status: 'Status'
+        account_users: 'Account Users'
+        custom_attributes: 'Custom Attributes'
+        limits: 'Limits'
+        all_features: 'All Features'
+      user:
+        id: 'Id'
+        avatar_url: 'Avatar Url'
+        avatar: 'Avatar'
+        name: 'Name'
+        display_name: 'Display Name'
+        email: 'Email'
+        unconfirmed_email: 'Unconfirmed Email'
+        confirmed_at: 'Confirmed At'
+        password: 'Password'
+        type: 'Type'
+        accounts: 'Accounts'
+        account_users: 'Account Users'
+        sign_in_count: 'Sign In Count'
+        current_sign_in_at: 'Current Sign In At'
+        last_sign_in_at: 'Last Sign In At'
+        current_sign_in_ip: 'Current Sign In Ip'
+        last_sign_in_ip: 'Last Sign In Ip'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+      agent_bot:
+        id: 'Id'
+        avatar_url: 'Avatar Url'
+        avatar: 'Avatar'
+        account: 'Account'
+        name: 'Name'
+        description: 'Description'
+        outgoing_url: 'Outgoing Url'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+      platform_app:
+        id: 'Id'
+        name: 'Name'
+        access_token: 'Access Token'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+      account_user:
+        id: 'Id'
+        account: 'Account'
+        user: 'User'
+        inviter: 'Inviter'
+        role: 'Role'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+

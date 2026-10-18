@@ -57,6 +57,7 @@ export default {
       isSavingTelegramRelay: false,
       isSettingUpTelegramWebhook: false,
       isTestingTelegramConnection: false,
+      isSyncingCommands: false,
       telegramRelayStatus: null,
       hasAutoTestedTelegram: false,
       widgetHotQuestions: '',
@@ -394,6 +395,41 @@ export default {
         this.isTestingTelegramConnection = false;
       }
     },
+
+    async syncTelegramCommands() {
+      const token = (this.telegramRelayBotToken || '').trim();
+      if (!token) {
+        useAlert(
+          this.$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.WEBHOOK_ERROR')
+        );
+        return;
+      }
+      try {
+        this.isSyncingCommands = true;
+        const axiosClient = window.axios || axios;
+        const response = await axiosClient.post(
+          '/webhooks/telegram_relay/sync_commands',
+          {
+            account_id: this.accountId,
+            bot_token: token,
+          }
+        );
+        if (response.data.ok) {
+          useAlert(
+            'Telegram 快捷指令菜单已成功同步至机器人！在群组任意话题输入 / 即可弹出菜单。'
+          );
+          this.testTelegramConnection(true);
+        } else {
+          useAlert(response.data.error || '同步快捷指令失败');
+        }
+      } catch (error) {
+        useAlert(
+          error.response?.data?.error || error.message || '同步快捷指令失败'
+        );
+      } finally {
+        this.isSyncingCommands = false;
+      }
+    },
   },
 };
 </script>
@@ -721,6 +757,29 @@ export default {
                     无法访问群组 ({{ telegramRelayGroupInfo.error }})。请确保已将机器人拉入群组，且群组 ID 填写正确（以 -100 开头）。
                   </span>
                 </div>
+              </div>
+
+              <!-- Commands Status -->
+              <div class="pt-1 space-y-1.5 border-t border-n-weak">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-n-teal-11">⚡</span>
+                    <span>
+                      快捷指令菜单：<span class="text-n-teal-11 font-medium">已就绪 (/resolve, /info, /reopen, /canned, /note, /tag, /help)</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    class="text-xs text-n-brand hover:underline font-medium cursor-pointer"
+                    :disabled="isSyncingCommands"
+                    @click="syncTelegramCommands"
+                  >
+                    {{ isSyncingCommands ? '正在同步...' : '重新同步指令' }}
+                  </button>
+                </div>
+                <p class="text-[11px] text-n-slate-10 pl-6">
+                  在 Telegram 话题中输入 <code>/</code> 即可呼出快捷操作菜单；支持发送 <code>/快捷码</code> 直接发送预设话术。
+                </p>
               </div>
             </div>
 

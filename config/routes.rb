@@ -520,6 +520,7 @@ Rails.application.routes.draw do
   post 'webhooks/telegram_relay', to: 'webhooks/telegram_relay#process_payload'
   match 'webhooks/telegram_relay/setup', to: 'webhooks/telegram_relay#setup_webhook', via: [:get, :post]
   match 'webhooks/telegram_relay/status', to: 'webhooks/telegram_relay#check_status', via: [:get, :post]
+  match 'webhooks/telegram_relay/sync_commands', to: 'webhooks/telegram_relay#sync_commands', via: [:get, :post]
   post 'webhooks/sms/:phone_number', to: 'webhooks/sms#process_payload'
   get 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#verify'
   post 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#process_payload'

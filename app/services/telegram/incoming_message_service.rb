@@ -130,7 +130,9 @@ class Telegram::IncomingMessageService
   end
 
   def image_message?
-    params[:message][:photo].present? || params.dig(:message, :sticker, :thumb).present?
+    params[:message][:photo].present? ||
+      params.dig(:message, :sticker, :thumb).present? ||
+      (params[:message][:animation].present? && animation_is_image?)
   end
 
   def audio_message?
@@ -138,7 +140,18 @@ class Telegram::IncomingMessageService
   end
 
   def video_message?
-    params[:message][:video].present? || params[:message][:video_note].present?
+    params[:message][:video].present? ||
+      params[:message][:video_note].present? ||
+      (params[:message][:animation].present? && !animation_is_image?)
+  end
+
+  def animation_is_image?
+    anim = params[:message][:animation]
+    return false unless anim
+
+    mime = anim[:mime_type].to_s.downcase
+    name = anim[:file_name].to_s.downcase
+    mime == 'image/gif' || name.end_with?('.gif')
   end
 
   def attach_files
@@ -154,12 +167,16 @@ class Telegram::IncomingMessageService
       inbox.channel.get_telegram_file_path(file[:file_id])
     )
 
+    filename = file[:file_name].presence ||
+               attachment_file.original_filename.presence ||
+               (file_content_type == :image ? "image_#{Time.current.to_i}.gif" : "attachment_#{Time.current.to_i}")
+
     @message.attachments.new(
       account_id: @message.account_id,
       file_type: file_content_type,
       file: {
         io: attachment_file,
-        filename: attachment_file.original_filename,
+        filename: filename,
         content_type: attachment_file.content_type
       }
     )
@@ -216,6 +233,7 @@ class Telegram::IncomingMessageService
   def visual_media_params
     params[:message][:photo].presence&.last ||
       params.dig(:message, :sticker, :thumb).presence ||
+      params[:message][:animation].presence ||
       params[:message][:video].presence ||
       params[:message][:video_note].presence
   end

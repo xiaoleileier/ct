@@ -191,7 +191,9 @@ class Webhooks::TelegramRelayController < ActionController::API
   def process_telegram_reply(conversation, msg)
     text = msg[:text] || msg[:caption]
     photo_array = msg[:photo]
-    document = msg[:document]
+    animation = msg[:animation]
+    # Telegram sends both animation and document for GIF messages; avoid duplicate
+    document = msg[:document] unless animation.present?
     sticker = msg[:sticker]
     voice = msg[:voice]
     audio = msg[:audio]
@@ -206,6 +208,8 @@ class Webhooks::TelegramRelayController < ActionController::API
 
     default_content = if photo_array.present?
                         '[图片]'
+                      elsif animation.present?
+                        '[动图]'
                       elsif sticker.present?
                         sticker[:emoji].presence || '[贴纸表情]'
                       elsif voice.present? || audio.present?
@@ -226,14 +230,15 @@ class Webhooks::TelegramRelayController < ActionController::API
     )
 
     attach_photo(message, photo_array) if photo_array.present?
+    attach_animation(message, animation) if animation.present?
     attach_sticker(message, sticker) if sticker.present?
     attach_document(message, document) if document.present?
     attach_voice(message, voice || audio) if (voice || audio).present?
     attach_video(message, video) if video.present?
 
-    # If visual media (photo or sticker) was attached and no custom text was typed,
+    # If visual media (photo, animation, video, or sticker) was attached and no custom text was typed,
     # clear content so it renders cleanly as visual media without a redundant text bubble
-    if message.attachments.any?(&:image?) && (msg[:text].blank? && msg[:caption].blank?)
+    if message.attachments.any? { |att| att.image? || att.video? } && msg[:text].blank? && msg[:caption].blank?
       message.content = nil
     end
 
@@ -244,7 +249,20 @@ class Webhooks::TelegramRelayController < ActionController::API
     best_photo = photo_array.last
     return unless best_photo
 
-    download_and_attach(message, best_photo[:file_id], :image)
+    download_and_attach(message, best_photo[:file_id], :image, "photo_#{Time.current.to_i}.jpg")
+  end
+
+  def attach_animation(message, animation)
+    return unless animation
+
+    file_id = animation[:file_id]
+    mime_type = animation[:mime_type].to_s.downcase
+    # Telegram animations are either video/mp4 (H.264 animation without sound) or image/gif
+    file_type = (mime_type == 'image/gif' || animation[:file_name].to_s.downcase.end_with?('.gif')) ? :image : :video
+    ext = file_type == :image ? 'gif' : 'mp4'
+    custom_filename = animation[:file_name].presence || "animation_#{Time.current.to_i}.#{ext}"
+
+    download_and_attach(message, file_id, file_type, custom_filename)
   end
 
   def attach_sticker(message, sticker)
@@ -260,25 +278,41 @@ class Webhooks::TelegramRelayController < ActionController::API
 
     return unless best_file_id
 
-    download_and_attach(message, best_file_id, :image, "sticker_#{best_file_id}.webp")
+    download_and_attach(message, best_file_id, :image, "sticker_#{Time.current.to_i}.webp")
   end
 
   def attach_document(message, document)
     return unless document
 
-    download_and_attach(message, document[:file_id], :file, document[:file_name])
+    file_id = document[:file_id]
+    mime_type = document[:mime_type].to_s.downcase
+    file_name = document[:file_name].to_s
+
+    # Smart detect file type from mime_type or file extension
+    file_type = if mime_type.start_with?('image/') || file_name.match?(/\.(jpe?g|png|gif|webp|bmp|svg)$/i)
+                  :image
+                elsif mime_type.start_with?('video/') || file_name.match?(/\.(mp4|mov|avi|mkv|webm)$/i)
+                  :video
+                elsif mime_type.start_with?('audio/') || file_name.match?(/\.(mp3|ogg|wav|m4a|aac)$/i)
+                  :audio
+                else
+                  :file
+                end
+
+    custom_filename = document[:file_name].presence || "file_#{Time.current.to_i}"
+    download_and_attach(message, file_id, file_type, custom_filename)
   end
 
   def attach_voice(message, voice_obj)
     return unless voice_obj
 
-    download_and_attach(message, voice_obj[:file_id], :audio, "voice_#{voice_obj[:file_id]}.ogg")
+    download_and_attach(message, voice_obj[:file_id], :audio, "voice_#{Time.current.to_i}.ogg")
   end
 
   def attach_video(message, video_obj)
     return unless video_obj
 
-    download_and_attach(message, video_obj[:file_id], :video, video_obj[:file_name] || "video_#{video_obj[:file_id]}.mp4")
+    download_and_attach(message, video_obj[:file_id], :video, video_obj[:file_name] || "video_#{Time.current.to_i}.mp4")
   end
 
   def download_and_attach(message, file_id, file_type, custom_filename = nil)
@@ -292,9 +326,12 @@ class Webhooks::TelegramRelayController < ActionController::API
     download_url = "https://api.telegram.org/file/bot#{bot_token}/#{file_path}"
     downloaded_file = Down.download(download_url)
 
-    filename = custom_filename || downloaded_file.original_filename || "telegram_#{file_id}"
+    path_filename = File.basename(file_path) if file_path.present?
+    filename = custom_filename || (path_filename.present? && !path_filename.start_with?('file_') ? path_filename : nil) || downloaded_file.original_filename || "attachment_#{Time.current.to_i}"
     content_type = downloaded_file.content_type || 'application/octet-stream'
     content_type = 'image/webp' if filename.ends_with?('.webp') && content_type == 'application/octet-stream'
+    content_type = 'image/gif' if filename.ends_with?('.gif') && content_type == 'application/octet-stream'
+    content_type = 'video/mp4' if filename.ends_with?('.mp4') && content_type == 'application/octet-stream'
 
     message.attachments.new(
       account_id: message.account_id,

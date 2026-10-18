@@ -24,6 +24,16 @@ const attachment = computed(() => {
 const isReel = computed(() => {
   return attachment.value.fileType === ATTACHMENT_TYPES.IG_REEL;
 });
+
+const isAnimation = computed(() => {
+  const url = (attachment.value?.dataUrl || '').toLowerCase();
+  return (
+    url.includes('animation') ||
+    url.includes('.gif') ||
+    url.includes('giphy') ||
+    url.includes('tenor')
+  );
+});
 </script>
 
 <template>
@@ -41,6 +51,10 @@ const isReel = computed(() => {
       </div>
       <video
         controls
+        :autoplay="isAnimation"
+        :loop="isAnimation"
+        :muted="isAnimation"
+        playsinline
         class="rounded-lg skip-context-menu"
         :src="attachment.dataUrl"
         :class="{

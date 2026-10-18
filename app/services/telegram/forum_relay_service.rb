@@ -276,7 +276,9 @@ class Telegram::ForumRelayService
 
   def relay_attachments(topic_id)
     message.attachments.each do |att|
-      if att.image?
+      if animation?(att)
+        send_telegram_file('sendAnimation', :animation, att, topic_id)
+      elsif att.image?
         send_telegram_file('sendPhoto', :photo, att, topic_id)
       elsif att.audio?
         send_telegram_file('sendAudio', :audio, att, topic_id)
@@ -286,6 +288,17 @@ class Telegram::ForumRelayService
         send_telegram_file('sendDocument', :document, att, topic_id)
       end
     end
+  end
+
+  def animation?(att)
+    content_type = (att.file.attached? ? att.file.content_type : '').to_s.downcase
+    filename = (att.file.attached? ? att.file.filename.to_s : att.fallback_title.to_s).downcase
+    url = att.download_url.to_s.downcase
+    content_type == 'image/gif' ||
+      filename.end_with?('.gif') ||
+      filename.include?('animation') ||
+      url.end_with?('.gif') ||
+      url.include?('animation')
   end
 
   def send_telegram_file(action, field, att, topic_id)

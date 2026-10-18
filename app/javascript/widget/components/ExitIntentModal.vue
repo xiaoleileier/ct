@@ -1,11 +1,14 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useStore } from 'vuex';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const emit = defineEmits(['close']);
-const store = useStore();
 
 const isVisible = ref(false);
+
+const tgUrl = computed(() => {
+  const customUrl = window.chatwootWebChannel?.telegramGroupUrl;
+  return customUrl && customUrl.trim() ? customUrl.trim() : 'https://t.me/';
+});
 
 const handleMouseLeave = e => {
   if (e.clientY <= 12) {
@@ -24,14 +27,10 @@ const close = () => {
   emit('close');
 };
 
-const handleLeaveContact = () => {
+const handleJoinTelegram = () => {
   close();
-  // Fill prompt into chat input if possible
-  const input = document.getElementById('chat-input');
-  if (input) {
-    input.value = '我的联系方式是: ';
-    input.focus();
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (tgUrl.value) {
+    window.open(tgUrl.value, '_blank', 'noopener,noreferrer');
   }
 };
 
@@ -41,12 +40,19 @@ const handleContinueChat = () => {
   if (input) input.focus();
 };
 
+let waitTimer = null;
+
 onMounted(() => {
   document.addEventListener('mouseleave', handleMouseLeave);
+  // 用户在聊天窗口停留或等待 60 秒后，自动提醒一次防失联加群
+  waitTimer = setTimeout(() => {
+    checkAndShow();
+  }, 60000);
 });
 
 onUnmounted(() => {
   document.removeEventListener('mouseleave', handleMouseLeave);
+  if (waitTimer) clearTimeout(waitTimer);
 });
 </script>
 
@@ -60,38 +66,38 @@ onUnmounted(() => {
     >
       <button
         type="button"
-        class="absolute top-3 right-3 text-n-slate-9 hover:text-n-slate-12 p-1 rounded-full cursor-pointer"
+        class="absolute top-3 right-3 text-n-slate-9 hover:text-n-slate-12 p-1 rounded-full cursor-pointer transition-colors"
         @click="close"
       >
         <span class="i-lucide-x size-4" />
       </button>
 
-      <div class="size-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-3">
-        <span class="i-lucide-gift size-6" />
+      <div class="size-12 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 mb-3 shadow-xs">
+        <span class="i-lucide-send size-6" />
       </div>
 
-      <h3 class="text-base font-bold text-n-slate-12 mb-1.5">
-        别急着走，为您准备了专属福利！
+      <h3 class="text-base font-bold text-n-slate-12 mb-1.5 flex items-center justify-center gap-1.5">
+        <span>防失联 & 官方服务群提醒</span>
       </h3>
-      <p class="text-xs text-n-slate-10 leading-relaxed mb-4">
-        客服目前在线，可为您提供快速方案报价。您也可以留下微信号或电话，稍后我们为您送上专享资料与优惠。
+      <p class="text-xs text-n-slate-10 leading-relaxed mb-4 text-center">
+        客服已收到您的咨询正在加紧为您接入。为防网页关闭后失联，建议您提前加入官方 Telegram 交流群，实时获取最新节点维护公告与备用域名！
       </p>
 
       <div class="flex flex-col gap-2 w-full">
         <button
           type="button"
-          class="w-full py-2 px-3 rounded-xl bg-n-brand text-white font-medium text-xs hover:opacity-90 shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          @click="handleLeaveContact"
+          class="w-full py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-xs shadow-md shadow-sky-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          @click="handleJoinTelegram"
         >
-          <span class="i-lucide-message-circle size-3.5" />
-          留下微信 / 手机号
+          <span class="i-lucide-send size-3.5" />
+          👉 加入 Telegram 官方群 / 频道
         </button>
         <button
           type="button"
           class="w-full py-2 px-3 rounded-xl border border-n-weak bg-n-slate-2 dark:bg-n-solid-3 text-n-slate-11 hover:text-n-slate-12 text-xs font-medium transition-all cursor-pointer"
           @click="handleContinueChat"
         >
-          继续咨询客服
+          留在本页继续等待客服
         </button>
       </div>
     </div>

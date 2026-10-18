@@ -29,6 +29,7 @@
         allowMessagesAfterResolved: <%= @web_widget.inbox.allow_messages_after_resolved %>,
         disableBranding: <%= @web_widget.inbox.account.feature_enabled?('disable_branding') %>,
         hotQuestions: <%= (@web_widget.inbox.account.custom_hot_questions).to_json.html_safe %>,
+        telegramGroupUrl: '<%= @web_widget.inbox.account.settings&.dig('telegram_group_url') || '' %>',
       }
       window.chatwootPubsubToken = '<%= @contact_inbox.pubsub_token %>'
       window.authToken = '<%= @token %>'

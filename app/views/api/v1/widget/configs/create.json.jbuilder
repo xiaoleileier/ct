@@ -22,6 +22,7 @@ json.website_channel_config do
   json.widget_color @web_widget.widget_color
   json.working_hours @web_widget.inbox.working_hours
   json.working_hours_enabled @web_widget.inbox.working_hours_enabled
+  json.telegram_group_url @web_widget.account.settings&.dig('telegram_group_url')
 end
 
 json.contact do

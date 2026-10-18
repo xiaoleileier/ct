@@ -41,7 +41,8 @@ class Account < ApplicationRecord
         'telegram_relay_bot_token': { 'type': %w[string null] },
         'telegram_relay_group_id': { 'type': %w[string null] },
         'telegram_relay_enabled': { 'type': %w[boolean null] },
-        'widget_hot_questions': { 'type': %w[string array null] }
+        'widget_hot_questions': { 'type': %w[string array null] },
+        'telegram_group_url': { 'type': %w[string null] }
       },
     'required': [],
     'additionalProperties': true
@@ -59,7 +60,7 @@ class Account < ApplicationRecord
 
   store_accessor :settings, :auto_resolve_after, :auto_resolve_message, :auto_resolve_ignore_waiting
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
-  store_accessor :settings, :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled, :widget_hot_questions
+  store_accessor :settings, :telegram_relay_bot_token, :telegram_relay_group_id, :telegram_relay_enabled, :widget_hot_questions, :telegram_group_url
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async

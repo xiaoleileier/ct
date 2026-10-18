@@ -53,6 +53,7 @@ export default {
       telegramRelayEnabled: false,
       telegramRelayBotToken: '',
       telegramRelayGroupId: '',
+      telegramGroupUrl: '',
       isSavingTelegramRelay: false,
       isSettingUpTelegramWebhook: false,
       isTestingTelegramConnection: false,
@@ -208,6 +209,7 @@ export default {
         const s = settings || {};
         this.telegramRelayBotToken = s.telegram_relay_bot_token || '';
         this.telegramRelayGroupId = s.telegram_relay_group_id || '';
+        this.telegramGroupUrl = s.telegram_group_url || '';
         this.telegramRelayEnabled = s.telegram_relay_enabled ?? false;
 
         const hq = s.widget_hot_questions;
@@ -259,6 +261,7 @@ export default {
         await this.$store.dispatch('accounts/update', {
           telegram_relay_bot_token: (this.telegramRelayBotToken || '').trim(),
           telegram_relay_group_id: (this.telegramRelayGroupId || '').trim(),
+          telegram_group_url: (this.telegramGroupUrl || '').trim(),
           telegram_relay_enabled: this.telegramRelayEnabled,
         });
         useAlert(this.$t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.API.SUCCESS'));
@@ -584,6 +587,26 @@ export default {
             />
             <p class="text-xs text-n-slate-10 leading-normal">
               {{ $t('GENERAL_SETTINGS.FORM.TELEGRAM_RELAY.GROUP_ID.HELP') }}
+            </p>
+          </div>
+
+          <!-- Telegram Official Community / Channel Link -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium text-n-slate-12 flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <span>📢</span>
+                <span>Telegram 官方交流群 / 频道链接</span>
+              </span>
+              <span class="text-xs text-n-slate-10">选填，用于防失联弹窗</span>
+            </label>
+            <NextInput
+              v-model="telegramGroupUrl"
+              type="text"
+              class="w-full text-sm"
+              placeholder="https://t.me/your_channel_or_group"
+            />
+            <p class="text-xs text-n-slate-10 leading-normal">
+              访客在聊天挂件等待客服回复或准备关闭网页时，防失联弹窗中会引导其点击加入该交流群/频道防失联。
             </p>
           </div>
 

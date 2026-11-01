@@ -37,15 +37,8 @@ class Telegram::ForumRelayService
     return if message.source_id&.start_with?('telegram_')
     return if message.private?
 
-    conversation.reload
-    topic_id = conversation.additional_attributes['telegram_topic_id']
-
-    if topic_id.blank?
-      topic_id = create_topic!
-      return if topic_id.blank?
-
-      send_initial_profile_card(topic_id)
-    end
+    topic_id = ensure_topic_id!
+    return if topic_id.blank?
 
     relay_message(topic_id)
   end
@@ -115,7 +108,34 @@ class Telegram::ForumRelayService
   delegate :conversation, to: :message
   delegate :contact, :account, :inbox, to: :conversation
 
-  def create_topic!
+  def ensure_topic_id!
+    conversation.reload
+    existing_id = conversation.additional_attributes&.[]('telegram_topic_id')
+    return existing_id if existing_id.present?
+
+    newly_created = false
+    topic_id = conversation.with_lock do
+      conversation.reload
+      current_id = conversation.additional_attributes&.[]('telegram_topic_id')
+      if current_id.present?
+        current_id
+      else
+        created_id = create_topic_on_telegram!
+        if created_id.present?
+          newly_created = true
+          attrs = (conversation.additional_attributes || {}).merge('telegram_topic_id' => created_id)
+          conversation.update_column(:additional_attributes, attrs)
+        end
+        created_id
+      end
+    end
+
+    send_initial_profile_card(topic_id) if newly_created && topic_id.present?
+
+    topic_id
+  end
+
+  def create_topic_on_telegram!
     topic_name = self.class.build_topic_name(conversation)
     response = HTTParty.post(self.class.api_url('createForumTopic', account), body: {
       chat_id: self.class.group_id(account),
@@ -123,11 +143,7 @@ class Telegram::ForumRelayService
     })
 
     if response.success? && response.parsed_response['ok']
-      topic_id = response.parsed_response.dig('result', 'message_thread_id')
-      conversation.additional_attributes ||= {}
-      conversation.additional_attributes['telegram_topic_id'] = topic_id
-      conversation.save!
-      topic_id
+      response.parsed_response.dig('result', 'message_thread_id')
     else
       Rails.logger.error "Failed to create Telegram forum topic: #{response.body}"
       nil
@@ -257,9 +273,23 @@ class Telegram::ForumRelayService
       if res.parsed_response.is_a?(Hash) && res.parsed_response['error_code'] == 400 &&
          res.parsed_response['description']&.include?('message thread not found')
         Rails.logger.warn "Telegram topic #{topic_id} not found, recreating forum topic..."
-        new_topic_id = create_topic!
+        new_topic_id = conversation.with_lock do
+          conversation.reload
+          current_id = conversation.additional_attributes&.[]('telegram_topic_id')
+          if current_id.present? && current_id != topic_id
+            current_id
+          else
+            created_id = create_topic_on_telegram!
+            if created_id.present?
+              attrs = (conversation.additional_attributes || {}).merge('telegram_topic_id' => created_id)
+              conversation.update_column(:additional_attributes, attrs)
+              send_initial_profile_card(created_id)
+            end
+            created_id
+          end
+        end
+
         if new_topic_id.present?
-          send_initial_profile_card(new_topic_id)
           HTTParty.post(self.class.api_url('sendMessage', account), body: {
             chat_id: self.class.group_id(account),
             message_thread_id: new_topic_id,

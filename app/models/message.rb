@@ -303,9 +303,9 @@ class Message < ApplicationRecord
     set_conversation_activity
     dispatch_create_events
     send_reply
+    relay_to_telegram_forum
     execute_message_template_hooks
     update_contact_activity
-    relay_to_telegram_forum
   end
 
   def relay_to_telegram_forum

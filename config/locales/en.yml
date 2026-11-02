@@ -453,6 +453,19 @@ en:
     settings:
       title: 'Settings'
       general: 'General'
+      captain: 'Captain AI'
+      custom_branding: 'Custom Branding'
+      email: 'Email Channel'
+      facebook: 'Messenger'
+      instagram: 'Instagram'
+      google: 'Google OAuth'
+      microsoft: 'Microsoft Email'
+      linear: 'Linear Integration'
+      notion: 'Notion Integration'
+      slack: 'Slack Integration'
+      whatsapp_embedded: 'WhatsApp Embedded Signup'
+      shopify: 'Shopify Integration'
+      internal: 'Internal Config'
       subtitle: 'Update your instance settings, access billing portal'
       installation_identifier: 'Installation Identifier'
       current_plan: 'Current plan'
@@ -469,8 +482,20 @@ en:
     app_configs:
       title: 'Configure Settings - %{name}'
       submit: 'Submit'
+      updated: 'App Configs - %{name} updated successfully'
       boolean_true: 'True'
       boolean_false: 'False'
+    account_users:
+      add_user: 'Add user to account'
+    accounts:
+      seed_data_desc: 'Click the button to generate seed data into this account for demos.'
+      seed_data_note: 'Note: This will clear all the existing data in this account.'
+      generate_seed_data: 'Generate Seed Data'
+      reset_cache_desc: 'This will clear the IndexedDB cache keys from redis. <br>The next load will fetch the data from backend.'
+      reset_cache_button: 'Reset Frontend Cache'
+      seed_triggered: 'Account seeding triggered'
+      cache_cleared: 'Cache keys cleared'
+      deletion_in_progress: 'Account deletion is in progress.'
     instance_statuses:
       title: 'Instance Status'
       metric: 'Metric'
@@ -514,10 +539,18 @@ en:
       edit_resource: 'Edit %{name}'
       show_resource: 'Show %{name}'
       new_resource: 'New %{name}'
+      back: 'Back'
+      save: 'Save'
     controller:
       created: '%{name} was successfully created.'
       updated: '%{name} was successfully updated.'
       destroyed: '%{name} was successfully destroyed.'
+      create:
+        success: '%{name} was successfully created.'
+      update:
+        success: '%{name} was successfully updated.'
+      destroy:
+        success: '%{name} was successfully destroyed.'
     form:
       error: 'error'
       errors: '%{pluralized_errors} prohibited this %{resource_name} from being saved:'
@@ -559,6 +592,7 @@ en:
         custom_attributes: 'Custom Attributes'
         limits: 'Limits'
         all_features: 'All Features'
+        manually_managed_features: 'Manually Managed Features'
       user:
         id: 'Id'
         avatar_url: 'Avatar Url'
@@ -579,6 +613,13 @@ en:
         last_sign_in_ip: 'Last Sign In Ip'
         created_at: 'Created At'
         updated_at: 'Updated At'
+        provider: 'Provider'
+        uid: 'UID'
+        confirmation_token: 'Confirmation Token'
+        confirmation_sent_at: 'Confirmation Sent At'
+        tokens: 'Tokens'
+        pubsub_token: 'Pubsub Token'
+        access_token: 'Access Token'
       agent_bot:
         id: 'Id'
         avatar_url: 'Avatar Url'
@@ -589,6 +630,7 @@ en:
         outgoing_url: 'Outgoing Url'
         created_at: 'Created At'
         updated_at: 'Updated At'
+        access_token: 'Access Token'
       platform_app:
         id: 'Id'
         name: 'Name'
@@ -603,4 +645,21 @@ en:
         role: 'Role'
         created_at: 'Created At'
         updated_at: 'Updated At'
+      access_token:
+        id: 'Id'
+        owner: 'Owner'
+        token: 'Token'
+        created_at: 'Created At'
+        updated_at: 'Updated At'
+    submit:
+      create: 'Create %{model}'
+      update: 'Update %{model}'
+      submit: 'Save'
+  views:
+    pagination:
+      first: '&laquo; First'
+      last: 'Last &raquo;'
+      previous: '&lsaquo; Prev'
+      next: 'Next &rsaquo;'
+      truncate: '&hellip;'
 

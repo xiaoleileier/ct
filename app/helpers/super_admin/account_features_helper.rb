@@ -10,7 +10,7 @@ module SuperAdmin::AccountFeaturesHelper
   # Returns a hash mapping feature names to their display names
   def self.feature_display_names
     account_features.each_with_object({}) do |feature, hash|
-      hash[feature['name']] = feature['display_name']
+      hash[feature['name']] = I18n.t("super_admin.account_features.#{feature['name']}", default: feature['display_name'])
     end
   end
 

@@ -16,10 +16,10 @@
 %>
 
 <div class="field-unit__label">
-  <%= f.label :manually_managed_features %>
+  <%= f.label :manually_managed_features, t("helpers.label.account.manually_managed_features", default: "手动管理的功能") %>
 </div>
 <div class="field-unit__field feature-container">
-  <p class="text-gray-400 text-xs italic mb-4">Features that remain enabled even when account plan is downgraded</p>
+  <p class="text-gray-400 text-xs italic mb-4"><%= t('super_admin.account_features.manually_managed_desc', default: '即使账户套餐降级仍保持启用的功能') %></p>
   
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <% premium_features_with_display.each do |feature_key, display_name| %>

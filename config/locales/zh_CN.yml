@@ -435,6 +435,19 @@ zh_CN:
     settings:
       title: '系统设置'
       general: '通用设置'
+      captain: 'Captain AI'
+      custom_branding: '品牌自定义'
+      email: '邮件渠道'
+      facebook: 'Messenger'
+      instagram: 'Instagram'
+      google: 'Google OAuth'
+      microsoft: 'Microsoft 邮件'
+      linear: 'Linear 集成'
+      notion: 'Notion 集成'
+      slack: 'Slack 集成'
+      whatsapp_embedded: 'WhatsApp 嵌入式接入'
+      shopify: 'Shopify 集成'
+      internal: '内部系统配置'
       subtitle: '更新您的实例设置、管理账单与订阅'
       installation_identifier: '安装标识符 (Instance ID)'
       current_plan: '当前版本套餐'
@@ -451,8 +464,247 @@ zh_CN:
     app_configs:
       title: '配置设置 - %{name}'
       submit: '保存设置'
+      updated: '配置设置 - %{name} 更新成功'
       boolean_true: '是 (True)'
       boolean_false: '否 (False)'
+    installation_configs:
+      ENABLE_ACCOUNT_SIGNUP:
+        title: '允许自主注册新账户'
+        description: '允许访客或新用户直接在登录/注册页面自主创建新账户。'
+      FIREBASE_PROJECT_ID:
+        title: 'Firebase 项目 ID'
+        description: 'Firebase 控制台中的 Project ID，用于移动端 App 消息推送通知。'
+      FIREBASE_CREDENTIALS:
+        title: 'Firebase 服务凭证 (JSON)'
+        description: 'Firebase 控制台生成的服务账号私钥 JSON 文件的完整文本内容。'
+      INSTALLATION_NAME:
+        title: '系统实例名称'
+        description: '控制台、页面标题等处使用的系统全局名称。'
+      LOGO_THUMBNAIL:
+        title: 'Favicon 网站图标'
+        description: '网站标签页 Favicon 图标（建议尺寸 512px × 512px）。'
+      LOGO:
+        title: '浅色模式 Logo'
+        description: '控制台顶部和登录页在浅色背景下显示的默认 Logo。'
+      LOGO_DARK:
+        title: '深色模式 Logo'
+        description: '深色模式下控制台和登录页等处显示的深色 Logo。'
+      BRAND_URL:
+        title: '品牌官方主页'
+        description: '系统邮件底部“技术支持”处链接的官方品牌网址。'
+      WIDGET_BRAND_URL:
+        title: '挂件品牌网址'
+        description: '聊天挂件底部品牌水印点击跳转的网址。'
+      BRAND_NAME:
+        title: '品牌展示名称'
+        description: '邮件和聊天挂件中显示的品牌名称。'
+      TERMS_URL:
+        title: '服务条款网址'
+        description: '注册和登录页面显示的服务条款 (Terms of Service) 链接。'
+      PRIVACY_URL:
+        title: '隐私政策网址'
+        description: '注册和登录页面显示的隐私政策 (Privacy Policy) 链接。'
+      DISPLAY_MANIFEST:
+        title: '显示 Web 应用清单'
+        description: '在前端页面生成并引入 manifest.json，支持 PWA 应用和默认元数据。'
+      CREATE_NEW_ACCOUNT_FROM_DASHBOARD:
+        title: '允许在控制台创建新账户'
+        description: '允许管理员直接在控制台创建新账户。'
+      INSTALLATION_EVENTS_WEBHOOK_URL:
+        title: '系统事件 Webhook 地址'
+        description: '接收系统全局事件（如新账户创建）的回调 Webhook URL。'
+      DIRECT_UPLOADS_ENABLED:
+        title: '启用云存储直传'
+        description: '启用客户端直接上传附件至云存储服务。'
+      MAILER_INBOUND_EMAIL_DOMAIN:
+        title: '入站收信邮件域名'
+        description: '用于生成客户对话连续性邮件回复地址的域名（如 reply+id@domain.com）。'
+      MAILER_SUPPORT_EMAIL:
+        title: '系统支持邮箱'
+        description: '系统向客户发送通知邮件时使用的支持邮箱地址。'
+      FB_APP_ID:
+        title: 'Facebook App ID'
+        description: 'Meta 开发者平台创建的 Facebook 应用 ID。'
+      FB_VERIFY_TOKEN:
+        title: 'Facebook 验证令牌 (Verify Token)'
+        description: '在 Meta 开发者后台配置 Messenger Webhook 时填写的验证令牌。'
+      FB_APP_SECRET:
+        title: 'Facebook App Secret'
+        description: 'Meta 开发者平台中的 Facebook 应用密钥。'
+      IG_VERIFY_TOKEN:
+        title: 'Instagram 验证令牌'
+        description: '在 Meta 开发者后台配置 Instagram Webhook 时填写的验证令牌。'
+      FACEBOOK_API_VERSION:
+        title: 'Facebook API 版本'
+        description: 'Facebook Graph API 版本号（需以字母 v 开头，例如 v18.0）。'
+      ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT:
+        title: '启用 Messenger 人工客服标签'
+        description: '启用 Messenger 渠道的“人工客服标签”，允许客服在超过 24 小时后继续回复客户。'
+      WHATSAPP_APP_ID:
+        title: 'WhatsApp App ID'
+        description: 'Meta 开发者平台中 WhatsApp Business API 的应用 ID。'
+      WHATSAPP_CONFIGURATION_ID:
+        title: 'WhatsApp 配置 ID (Configuration ID)'
+        description: 'WhatsApp 嵌入式登录流程的 Configuration ID。'
+      WHATSAPP_APP_SECRET:
+        title: 'WhatsApp App Secret'
+        description: 'WhatsApp 应用对应的 App Secret 密钥。'
+      WHATSAPP_API_VERSION:
+        title: 'WhatsApp API 版本'
+        description: 'WhatsApp Cloud API 请求使用的版本号（如 v22.0）。'
+      AZURE_APP_ID:
+        title: 'Azure 客户端 ID (App ID)'
+        description: 'Microsoft Entra ID (Azure) 应用注册生成的客户端应用 ID。'
+      AZURE_APP_SECRET:
+        title: 'Azure 客户端密钥 (App Secret)'
+        description: 'Microsoft Azure 应用注册中生成的客户端密码值。'
+      CAPTAIN_OPEN_AI_API_KEY:
+        title: 'OpenAI API 密钥'
+        description: 'Captain AI 智能客服助手调用的 OpenAI API Key。'
+      CAPTAIN_OPEN_AI_MODEL:
+        title: 'OpenAI 对话模型'
+        description: 'Captain AI 使用的对话模型名称（默认：gpt-4o-mini）。'
+      CAPTAIN_OPEN_AI_ENDPOINT:
+        title: 'OpenAI API 接口端点 (可选)'
+        description: 'OpenAI API 基础请求地址，支持填写官方地址或自定义第三方中转反代地址。'
+      CAPTAIN_EMBEDDING_MODEL:
+        title: 'Embedding 向量嵌入模型 (可选)'
+        description: '用于知识库与帮助文档切片向量化的嵌入模型（默认：text-embedding-3-small）。'
+      CAPTAIN_FIRECRAWL_API_KEY:
+        title: 'Firecrawl API 密钥 (可选)'
+        description: '用于抓取和解析外部网页/文档内容的 Firecrawl 接口密钥。'
+      CAPTAIN_CLOUD_PLAN_LIMITS:
+        title: 'Captain 套餐额度限制'
+        description: 'Captain AI 服务的各套餐配额与限制参数。'
+      LINEAR_CLIENT_ID:
+        title: 'Linear 客户端 ID'
+        description: 'Linear 开发者后台创建的 OAuth 应用客户端 ID。'
+      LINEAR_CLIENT_SECRET:
+        title: 'Linear 客户端密钥'
+        description: 'Linear OAuth 应用的客户端密钥。'
+      NOTION_CLIENT_ID:
+        title: 'Notion 客户端 ID'
+        description: 'Notion 开发者集成后台生成的 OAuth 客户端 ID。'
+      NOTION_CLIENT_SECRET:
+        title: 'Notion 客户端密钥'
+        description: 'Notion OAuth 集成的客户端密钥。'
+      NOTION_VERSION:
+        title: 'Notion API 版本'
+        description: 'Notion API 版本号（默认：2022-06-28）。'
+      SLACK_CLIENT_ID:
+        title: 'Slack 客户端 ID'
+        description: 'Slack 开放平台创建的 App 客户端 ID。'
+      SLACK_CLIENT_SECRET:
+        title: 'Slack 客户端密钥'
+        description: 'Slack App 的客户端密钥。'
+      SHOPIFY_CLIENT_ID:
+        title: 'Shopify 客户端 ID'
+        description: 'Shopify 开发者后台创建的 App API 密钥 / Client ID。'
+      SHOPIFY_CLIENT_SECRET:
+        title: 'Shopify 客户端密钥'
+        description: 'Shopify App 的 API 密码密钥 / Client Secret。'
+      INSTAGRAM_APP_ID:
+        title: 'Instagram App ID'
+        description: 'Meta 开发者平台中的 Instagram 应用 ID。'
+      INSTAGRAM_APP_SECRET:
+        title: 'Instagram App Secret'
+        description: 'Instagram 应用对应的 App Secret 密钥。'
+      INSTAGRAM_VERIFY_TOKEN:
+        title: 'Instagram 验证令牌'
+        description: '在 Meta 开发者后台配置 Instagram Webhook 时填写的验证令牌。'
+      ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT:
+        title: '启用 Instagram 人工客服标签'
+        description: '启用 Instagram 渠道的人工客服标签，允许客服在超过 24 小时后继续回复客户。'
+      INSTAGRAM_API_VERSION:
+        title: 'Instagram API 版本'
+        description: 'Instagram Graph API 请求使用的版本号（如 v22.0）。'
+      GOOGLE_OAUTH_CLIENT_ID:
+        title: 'Google OAuth 客户端 ID'
+        description: 'Google Cloud 控制台创建的 OAuth 2.0 客户端 ID。'
+      GOOGLE_OAUTH_CLIENT_SECRET:
+        title: 'Google OAuth 客户端密钥'
+        description: 'Google OAuth 2.0 客户端密钥 Client Secret。'
+      GOOGLE_OAUTH_REDIRECT_URI:
+        title: 'Google OAuth 重定向 URI'
+        description: 'Google OAuth 授权成功后的回调地址。'
+      CLOUDFLARE_API_KEY:
+        title: 'Cloudflare API Key'
+        description: '用于 Cloudflare 域名管理的 API 认证密钥。'
+      CLOUDFLARE_ZONE_ID:
+        title: 'Cloudflare Zone ID'
+        description: 'Cloudflare 对应域名的 Zone ID。'
+      WIDGET_TOKEN_EXPIRY:
+        title: '挂件会话令牌有效期'
+        description: '聊天挂件身份令牌的有效期天数（默认 180 天）。'
+      CHATWOOT_INSTANCE_ADMIN_EMAIL:
+        title: '实例管理员邮箱'
+        description: '用于接收系统合规和安全通知的管理员邮箱地址。'
+    account_features:
+      manually_managed_desc: '即使账户套餐降级仍保持启用的功能'
+      no_manually_managed: '未配置任何手动管理的功能'
+      inbound_emails: '入站收信处理'
+      channel_email: '邮件渠道'
+      channel_facebook: 'Facebook 渠道'
+      channel_twitter: 'Twitter 渠道'
+      ip_lookup: '客户 IP 归属地查询'
+      disable_branding: '去除品牌水印'
+      email_continuity_on_api_channel: 'API 渠道邮件连续性'
+      help_center: '帮助中心门户'
+      agent_bots: '机器人客服支持'
+      macros: '快捷宏指令'
+      agent_management: '坐席管理'
+      team_management: '团队管理'
+      inbox_management: '收件箱管理'
+      labels: '标签系统'
+      custom_attributes: '自定义属性'
+      automations: '自动化规则'
+      canned_responses: '预设快捷回复'
+      integrations: '应用集成'
+      voice_recorder: '语音消息录制'
+      mobile_v2: '移动端应用 V2'
+      channel_website: '网站挂件渠道'
+      campaigns: '营销触达活动'
+      reports: '数据分析报告'
+      crm: 'CRM 客户管理'
+      auto_resolve_conversations: '超时自动解决对话'
+      custom_reply_email: '自定义回复邮箱'
+      custom_reply_domain: '自定义回复域名'
+      audit_logs: '操作审计日志'
+      response_bot: '智能应答机器人'
+      message_reply_to: '消息引用回复'
+      insert_article_in_reply: '回复中插入知识库文章'
+      inbox_view: '收件箱视图'
+      sla: 'SLA 服务协议'
+      help_center_embedding_search: '帮助中心向量语义搜索'
+      linear_integration: 'Linear 集成'
+      captain_integration: 'Captain AI 智能助理'
+      custom_roles: '自定义角色权限'
+      chatwoot_v4: 'Chatwoot V4'
+      report_v4: '数据报告 V4'
+      contact_chatwoot_support_team: '联系官方支持团队'
+      shopify_integration: 'Shopify 集成'
+      search_with_gin: '消息 GIN 索引全文检索'
+      channel_instagram: 'Instagram 渠道'
+      crm_integration: 'CRM 集成'
+      channel_voice: '语音通话渠道'
+      notion_integration: 'Notion 集成'
+      captain_integration_v2: 'Captain AI V2'
+      whatsapp_embedded_signup: 'WhatsApp 嵌入式注册'
+      whatsapp_campaign: 'WhatsApp 营销活动'
+      crm_v2: 'CRM V2'
+      assignment_v2: '自动分配策略 V2'
+      twilio_content_templates: 'Twilio 模板消息'
+      advanced_search: '高级检索'
+      saml: 'SAML 单点登录'
+      advanced_search_indexing: '高级检索索引'
+      reply_mailer_migration: '回复发信模块迁移'
+      quoted_email_reply: '引用邮件回复'
+    account_limits:
+      agents: '坐席客服数量限制'
+      inboxes: '收件箱数量限制'
+      conversations: '对话数量限制'
+    account_users:
+      add_user: '添加成员到账户'
     instance_statuses:
       title: '实例状态'
       metric: '指标名称'
@@ -496,10 +748,18 @@ zh_CN:
       edit_resource: '编辑 %{name}'
       show_resource: '查看 %{name}'
       new_resource: '新建 %{name}'
+      back: '返回'
+      save: '保存'
     controller:
       created: '%{name} 创建成功。'
       updated: '%{name} 更新成功。'
       destroyed: '%{name} 删除成功。'
+      create:
+        success: '%{name} 创建成功。'
+      update:
+        success: '%{name} 更新成功。'
+      destroy:
+        success: '%{name} 删除成功。'
     form:
       error: '个错误'
       errors: '%{pluralized_errors}导致此 %{resource_name} 无法保存：'
@@ -541,6 +801,7 @@ zh_CN:
         custom_attributes: '自定义属性'
         limits: '配额限制'
         all_features: '全部功能'
+        manually_managed_features: '手动管理功能'
       user:
         id: '用户 ID'
         avatar_url: '头像'
@@ -561,6 +822,13 @@ zh_CN:
         last_sign_in_ip: '上次登录 IP'
         created_at: '创建时间'
         updated_at: '更新时间'
+        provider: '认证方式'
+        uid: '唯一识别码 (UID)'
+        confirmation_token: '邮箱验证令牌'
+        confirmation_sent_at: '验证邮件发送时间'
+        tokens: '认证令牌'
+        pubsub_token: 'PubSub 订阅令牌'
+        access_token: 'API 访问令牌'
       agent_bot:
         id: '机器人 ID'
         avatar_url: '头像'
@@ -571,6 +839,7 @@ zh_CN:
         outgoing_url: 'Webhook 地址'
         created_at: '创建时间'
         updated_at: '更新时间'
+        access_token: '访问令牌'
       platform_app:
         id: '应用 ID'
         name: '应用名称'
@@ -585,4 +854,22 @@ zh_CN:
         role: '角色权限'
         created_at: '创建时间'
         updated_at: '更新时间'
+      access_token:
+        id: '令牌 ID'
+        owner: '拥有者'
+        token: '令牌内容'
+        created_at: '创建时间'
+        updated_at: '更新时间'
+    submit:
+      create: '创建 %{model}'
+      update: '更新 %{model}'
+      submit: '保存'
+  views:
+    pagination:
+      first: '&laquo; 首页'
+      last: '末页 &raquo;'
+      previous: '&lsaquo; 上一页'
+      next: '下一页 &rsaquo;'
+      truncate: '&hellip;'
+
 

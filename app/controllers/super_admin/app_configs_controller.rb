@@ -22,7 +22,24 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
       i.value = value
       i.save!
     end
-    redirect_to super_admin_settings_path, notice: "App Configs - #{@config.titleize} updated successfully"
+    config_title_map = {
+      'general' => '通用设置',
+      'captain' => 'Captain AI',
+      'custom_branding' => '品牌自定义',
+      'email' => '邮件渠道',
+      'facebook' => 'Messenger',
+      'instagram' => 'Instagram',
+      'google' => 'Google OAuth',
+      'microsoft' => 'Microsoft 邮件',
+      'linear' => 'Linear 集成',
+      'notion' => 'Notion 集成',
+      'slack' => 'Slack 集成',
+      'whatsapp_embedded' => 'WhatsApp 嵌入式接入',
+      'shopify' => 'Shopify 集成',
+      'internal' => '内部系统配置'
+    }
+    localized_name = I18n.t("super_admin.settings.#{@config}", default: config_title_map[@config] || @config.titleize)
+    redirect_to super_admin_app_config_path(config: @config), notice: I18n.t('super_admin.app_configs.updated', name: localized_name, default: "配置设置 - #{localized_name} 更新成功")
   end
 
   private

@@ -6,6 +6,31 @@
     <%= content_for(:title) %>
   </h1>
 </header>
+<%
+  metric_translations = {
+    'Chatwoot edition' => 'Chatwoot 版本',
+    'Chatwoot version' => '系统版本号',
+    'Git SHA' => 'Git 提交哈希 (SHA)',
+    'Database Migrations' => '数据库迁移状态',
+    'Postgres alive' => 'PostgreSQL 数据库连通状态',
+    'Redis alive' => 'Redis 服务连通状态',
+    'Redis version' => 'Redis 版本',
+    'Redis number of connected clients' => 'Redis 当前连接客户端数',
+    "Redis 'maxclients' setting" => "Redis 最大客户端限制 (maxclients)",
+    'Redis memory used' => 'Redis 已用内存',
+    'Redis memory peak' => 'Redis 内存峰值',
+    'Redis total memory' => 'Redis 系统总内存'
+  }
+  value_translations = {
+    'true' => '正常 (True)',
+    'false' => '异常 (False)',
+    'Enterprise' => '企业版 (Enterprise)',
+    'Community' => '社区版 (Community)',
+    'Custom' => '定制版 (Custom)',
+    'completed' => '已全部完成 (Completed)',
+    'pending' => '有待执行迁移 (Pending)'
+  }
+%>
 <section class="main-content__body">
   <table>
   <tr>
@@ -14,8 +39,8 @@
   </tr>
   <% @metrics.each do |key,value| %>
    <tr>
-   <td> <%= key %> </td>
-   <td> <%= value %></td>
+   <td> <%= metric_translations[key] || key %> </td>
+   <td> <%= value_translations[value.to_s] || value %></td>
   </tr>
   <% end %>
 </table>

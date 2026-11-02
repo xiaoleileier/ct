@@ -1,3 +1,15 @@
-<% JSON.parse(field.to_s).each do |k,v| %>
-<%= k %>: <%= v %> </br>
-<% end %>
+<%
+  limit_names = {
+    'agents' => '坐席客服数量限制',
+    'inboxes' => '收件箱数量限制',
+    'conversations' => '对话数量限制'
+  }
+%>
+<div class="space-y-1">
+  <% JSON.parse(field.to_s).each do |k,v| %>
+    <div>
+      <span class="font-medium text-slate-700"><%= t("super_admin.account_limits.#{k}", default: limit_names[k] || k.to_s.titleize) %>:</span>
+      <span class="text-slate-900"><%= v %></span>
+    </div>
+  <% end %>
+</div>

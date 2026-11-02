@@ -1,5 +1,24 @@
+<%
+  config_title_map = {
+    'general' => '通用设置',
+    'captain' => 'Captain AI',
+    'custom_branding' => '品牌自定义',
+    'email' => '邮件渠道',
+    'facebook' => 'Messenger',
+    'instagram' => 'Instagram',
+    'google' => 'Google OAuth',
+    'microsoft' => 'Microsoft 邮件',
+    'linear' => 'Linear 集成',
+    'notion' => 'Notion 集成',
+    'slack' => 'Slack 集成',
+    'whatsapp_embedded' => 'WhatsApp 嵌入式接入',
+    'shopify' => 'Shopify 集成',
+    'internal' => '内部系统配置'
+  }
+  localized_config_name = t("super_admin.settings.#{@config}", default: config_title_map[@config] || @config.titleize)
+%>
 <% content_for(:title) do %>
-  <%= t('super_admin.app_configs.title', name: @config.titleize, default: "配置设置 - #{@config.titleize}") %>
+  <%= t('super_admin.app_configs.title', name: localized_config_name, default: "配置设置 - #{localized_config_name}") %>
 <% end %>
 
 <header class="main-content__header" role="banner">
@@ -17,9 +36,13 @@
 <section class="main-content__body">
   <%= form_with url: super_admin_app_config_url(config: @config) , method: :post do |form| %>
     <% @allowed_configs.each do |key| %>
+      <%
+        label_text = t("super_admin.installation_configs.#{key}.title", default: @installation_configs[key]&.dig('display_title').presence || key)
+        desc_text = t("super_admin.installation_configs.#{key}.description", default: @installation_configs[key]&.dig('description') || '')
+      %>
       <div class="flex mb-8">
         <div class="field-unit__label">
-          <%= form.label "app_config[#{key}]", @installation_configs[key]&.dig('display_title') || key %>
+          <%= form.label "app_config[#{key}]", label_text %>
         </div>
         <div class="-mt-2 field-unit__field ">
           <% if @installation_configs[key]&.dig('type') == 'boolean' %>
@@ -62,9 +85,9 @@
         <% else %>
           <%= form.text_field "app_config[#{key}]", value: @app_config[key] %>
         <% end %>
-          <%if @installation_configs[key]&.dig('description').present? %>
+          <% if desc_text.present? %>
             <p class="pt-2 text-xs italic text-slate-400">
-              <%= @installation_configs[key]&.dig('description') %>
+              <%= desc_text %>
             </p>
           <% end %>
         </div>

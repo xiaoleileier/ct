@@ -355,6 +355,13 @@ class Message < ApplicationRecord
     return if previous_changes.blank?
 
     send_update_event
+    sync_delete_to_telegram if content_attributes&.[]('deleted') == true
+  end
+
+  def sync_delete_to_telegram
+    ::Telegram::ForumRelayService.delete_telegram_message(self) if ::Telegram::ForumRelayService.configured?(account)
+  rescue StandardError => e
+    Rails.logger.warn "Failed to sync delete to telegram: #{e.message}"
   end
 
   def send_reply

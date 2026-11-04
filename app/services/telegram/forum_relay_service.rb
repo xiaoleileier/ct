@@ -93,6 +93,23 @@ class Telegram::ForumRelayService
     "💬 ##{conv.display_id} - #{name_part}#{phone_part}".truncate(120)
   end
 
+  def self.delete_telegram_message(message)
+    account = message.account
+    return unless configured?(account)
+
+    gid = group_id(account)
+    tg_msg_id = message.additional_attributes&.[]('telegram_message_id') ||
+                (message.source_id.to_s.start_with?('telegram_') ? message.source_id.sub(/^telegram_/, '') : nil)
+    return if tg_msg_id.blank?
+
+    HTTParty.post(api_url('deleteMessage', account), body: {
+      chat_id: gid,
+      message_id: tg_msg_id
+    })
+  rescue StandardError => e
+    Rails.logger.warn "Failed to delete message on Telegram: #{e.message}"
+  end
+
   private
 
   delegate :conversation, to: :message
@@ -140,12 +157,12 @@ class Telegram::ForumRelayService
     end
   end
 
-  def send_initial_profile_card(topic_id)
+  def build_profile_card_text(conv_url = nil)
     contact.reload rescue nil
     conversation.reload rescue nil
 
     frontend_url = ENV['FRONTEND_URL'].presence || 'http://localhost:3000'
-    conv_url = "#{frontend_url}/app/accounts/#{account.id}/conversations/#{conversation.display_id}"
+    url = conv_url || "#{frontend_url}/app/accounts/#{account.id}/conversations/#{conversation.display_id}"
 
     # Smart email detection
     email = contact.email.presence ||
@@ -161,27 +178,72 @@ class Telegram::ForumRelayService
     attr_lines = format_contact_attributes(email)
     attr_section = attr_lines.present? ? "#{attr_lines.join("\n")}\n" : ''
 
-    card_text = <<~HTML
-      🎉 <b>新客户咨询发起 (会话 ##{conversation.display_id})</b>
+    assignee_name = conversation.assignee&.name || '未指派'
+    labels = conversation.label_list
+    labels_line = labels.any? ? "🏷️ <b>会话标签</b>: #{CGI.escapeHTML(labels.join(', '))}\n" : ''
+
+    status_str = case conversation.status
+                 when 'open' then '🟢 处理中'
+                 when 'resolved' then '✅ 已解决'
+                 when 'pending' then '⏳ 待处理'
+                 when 'snoozed' then '💤 已暂停'
+                 else conversation.status
+                 end
+
+    <<~HTML.strip
+      🎉 <b>客户画像与会话详情 (会话 ##{conversation.display_id})</b>
       ━━━━━━━━━━━━━━━━━━━━
       👤 <b>客户姓名</b>: #{CGI.escapeHTML(contact.name.presence || '新访客')}
       📧 <b>电子邮箱</b>: #{CGI.escapeHTML(email.presence || '未留')}
       📱 <b>联系电话</b>: #{contact.phone_number.presence || '未留'}
       #{attr_section}#{location_line}🌐 <b>来源页面</b>: #{CGI.escapeHTML(conversation.additional_attributes['referer'].to_s.presence || '直接访问')}
       📥 <b>接入渠道</b>: #{CGI.escapeHTML(inbox.name)}
-      🔗 <a href="#{conv_url}">点击在客服后台打开此会话</a>
+      📌 <b>会话状态</b>: #{status_str} | <b>责任客服</b>: #{CGI.escapeHTML(assignee_name)}
+      #{labels_line}🔗 <a href="#{url}">点击在客服后台打开此会话</a>
       ━━━━━━━━━━━━━━━━━━━━
-      💡 <i>提示: 在此话题直接回复文字、图片、表情或贴纸即可同步给客户。
-      发送 <code>/info</code> 刷新客户属性，发送 <code>/close</code> 解决该会话。</i>
+      💡 <i>提示: 点击下方快捷按钮操作，或直接回复消息。发送 <code>/help</code> 查看全部指令。</i>
     HTML
+  end
 
-    HTTParty.post(self.class.api_url('sendMessage', account), body: {
+  def build_profile_card_buttons(conv_url = nil)
+    frontend_url = ENV['FRONTEND_URL'].presence || 'http://localhost:3000'
+    url = conv_url || "#{frontend_url}/app/accounts/#{account.id}/conversations/#{conversation.display_id}"
+
+    {
+      inline_keyboard: [
+        [
+          { text: '📊 刷新数据', callback_data: "info:#{conversation.id}" },
+          { text: '✅ 解决并关闭', callback_data: "resolve:#{conversation.id}" }
+        ],
+        [
+          { text: '🏷️ 标记已留资', callback_data: "lead:#{conversation.id}" },
+          { text: '🚫 屏蔽/拉黑', callback_data: "block:#{conversation.id}" }
+        ],
+        [
+          { text: '🔗 打开客服后台', url: url }
+        ]
+      ]
+    }
+  end
+
+  def send_initial_profile_card(topic_id)
+    card_text = build_profile_card_text
+    buttons = build_profile_card_buttons
+
+    res = HTTParty.post(self.class.api_url('sendMessage', account), body: {
       chat_id: self.class.group_id(account),
       message_thread_id: topic_id,
       text: card_text,
       parse_mode: 'HTML',
-      disable_web_page_preview: true
+      disable_web_page_preview: true,
+      reply_markup: buttons.to_json
     })
+
+    if res.success? && res.parsed_response['ok']
+      card_msg_id = res.parsed_response.dig('result', 'message_id')
+      attrs = (conversation.additional_attributes || {}).merge('telegram_card_message_id' => card_msg_id)
+      conversation.update_column(:additional_attributes, attrs)
+    end
   end
 
   def format_contact_attributes(email)
@@ -259,6 +321,12 @@ class Telegram::ForumRelayService
         parse_mode: 'HTML'
       })
 
+      if res.success? && res.parsed_response['ok']
+        tg_id = res.parsed_response.dig('result', 'message_id')
+        attrs = (message.additional_attributes || {}).merge('telegram_message_id' => tg_id)
+        message.update_column(:additional_attributes, attrs)
+      end
+
       # Auto-heal: If topic was deleted or closed in Telegram, recreate and re-send
       if res.parsed_response.is_a?(Hash) && res.parsed_response['error_code'] == 400 &&
          res.parsed_response['description']&.include?('message thread not found')
@@ -325,20 +393,26 @@ class Telegram::ForumRelayService
     gid = self.class.group_id(account)
     url = self.class.api_url(action, account)
 
-    if att.file.attached?
-      att.file.open do |tempfile|
-        HTTParty.post(url, body: {
-          chat_id: gid,
-          message_thread_id: topic_id,
-          field => File.open(tempfile.path)
-        })
-      end
-    elsif att.download_url.present?
-      HTTParty.post(url, body: {
-        chat_id: gid,
-        message_thread_id: topic_id,
-        field => att.download_url
-      })
+    res = if att.file.attached?
+            att.file.open do |tempfile|
+              HTTParty.post(url, body: {
+                chat_id: gid,
+                message_thread_id: topic_id,
+                field => File.open(tempfile.path)
+              })
+            end
+          elsif att.download_url.present?
+            HTTParty.post(url, body: {
+              chat_id: gid,
+              message_thread_id: topic_id,
+              field => att.download_url
+            })
+          end
+
+    if res&.success? && res.parsed_response['ok']
+      tg_id = res.parsed_response.dig('result', 'message_id')
+      attrs = (message.additional_attributes || {}).merge('telegram_message_id' => tg_id)
+      message.update_column(:additional_attributes, attrs)
     end
   rescue StandardError => e
     Rails.logger.warn "Failed to send #{field} to Telegram: #{e.message}"

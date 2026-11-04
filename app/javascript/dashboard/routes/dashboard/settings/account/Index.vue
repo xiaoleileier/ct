@@ -567,7 +567,7 @@ export default {
               <b>填写群组 ID 并激活</b>：将群组 ID（超级群组 ID 必须以 <code>-100</code> 开头）填入下方「群组 ID」，点击「保存 Telegram 配置」，再点击「一键激活 Webhook」。
             </li>
             <li>
-              <b>实用技巧</b>：在 TG 话题内发送 <code>/close</code> 或直接在 TG 关闭话题，系统会自动标记会话已解决；在后台重新打开会话，TG 话题也会自动重新打开。
+              <b>实用技巧</b>：话题顶部卡片自带「刷新数据」「解决并关闭」「标记已留资」「屏蔽/拉黑」快捷交互按钮；支持 <code>/assign</code> 转接客服、<code>/block</code> 屏蔽访客、<code>/bind</code> 绑定客服身份、<code>/del</code> 撤回消息。在 TG 中编辑消息会自动同步给网页端访客。
             </li>
           </ol>
         </div>

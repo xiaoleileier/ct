@@ -2,7 +2,17 @@
 
 class Webhooks::TelegramRelayController < ActionController::API
   def process_payload
-    msg = params[:message] || params[:edited_message]
+    if params[:callback_query].present?
+      handle_callback_query(params[:callback_query])
+      return head :ok
+    end
+
+    if params[:edited_message].present?
+      handle_edited_message(params[:edited_message])
+      return head :ok
+    end
+
+    msg = params[:message]
     return head :ok if msg.blank?
     return head :ok if msg.dig(:from, :is_bot)
 
@@ -30,93 +40,10 @@ class Webhooks::TelegramRelayController < ActionController::API
       return head :ok
     end
 
-    # Support /resolve, /close, /reopen, /info, /canned, /note, /tag, /help commands inside topic
     text = (msg[:text] || msg[:caption]).to_s.strip
     if text.start_with?('/')
-      parts = text.split(/\s+/, 2)
-      cmd = parts.first.to_s.downcase.sub(%r{^/}, '').sub(/@\w+$/, '')
-      cmd_args = parts.second.to_s.strip
-
-      case cmd
-      when 'resolve', 'close', '解决'
-        conversation.resolved! unless conversation.resolved?
-        Telegram::ForumRelayService.handle_conversation_status_change(conversation)
-        return head :ok
-      when 'reopen', 'open', '重开'
-        conversation.open! unless conversation.open?
-        Telegram::ForumRelayService.handle_conversation_status_change(conversation)
-        return head :ok
-      when 'info', 'user', 'profile', '用户信息'
-        Telegram::ForumRelayService.new(conversation: conversation).send_initial_profile_card(thread_id)
-        return head :ok
-      when 'note', '备注'
-        if cmd_args.present?
-          agent = conversation.assignee || conversation.account.users.first
-          conversation.messages.create!(
-            account: conversation.account,
-            inbox: conversation.inbox,
-            message_type: :activity,
-            private: true,
-            content: cmd_args,
-            sender: agent
-          )
-          send_bot_topic_message(conversation, thread_id, "📝 <b>内部备注已记录 (仅客服可见)</b>:\n#{CGI.escapeHTML(cmd_args)}")
-        else
-          send_bot_topic_message(conversation, thread_id, "⚠️ 请提供备注内容，例如: <code>/note 客户反馈香港02节点超时</code>")
-        end
-        return head :ok
-      when 'tag', 'label', '标签'
-        if cmd_args.present?
-          labels = cmd_args.split(/[,，\s]+/).map(&:strip).reject(&:blank?)
-          conversation.add_labels(labels)
-          send_bot_topic_message(conversation, thread_id, "🏷️ <b>已添加会话标签</b>: #{CGI.escapeHTML(labels.join(', '))}")
-        else
-          send_bot_topic_message(conversation, thread_id, "⚠️ 请提供标签名，例如: <code>/tag 节点故障, 充值未到账</code>")
-        end
-        return head :ok
-      when 'canned', 'quick', '快捷回复', '话术'
-        canned_list = conversation.account.canned_responses.order(:short_code).limit(25)
-        if canned_list.any?
-          lines = canned_list.map do |cr|
-            "• <code>/#{cr.short_code}</code> : #{CGI.escapeHTML(cr.content.truncate(45))}"
-          end
-          send_bot_topic_message(conversation, thread_id, "📋 <b>快捷预设话术列表</b> (直接发送 <code>/快捷码</code> 即可发给客户):\n\n#{lines.join("\n")}")
-        else
-          send_bot_topic_message(conversation, thread_id, "📋 暂无预设快捷话术，可在 Chatwoot 后台【设置 -> 快捷回复】中添加。")
-        end
-        return head :ok
-      when 'help', '帮助'
-        help_text = <<~HELP.strip
-          💡 <b>Telegram 客服快捷指令指南</b>
-
-          • <b>直接回复</b>: 发送文字/图片/动图/语音/文件，直接同步回复客户
-          • <code>/resolve</code>: 解决并关闭当前会话
-          • <code>/reopen</code>: 重新打开已关闭会话
-          • <code>/info</code>: 重新调出客户画像与订阅信息卡片
-          • <code>/canned</code>: 查看所有快捷预设话术列表
-          • <code>/&lt;快捷码&gt;</code>: 直接发送预设话术给客户 (如 <code>/clash</code>)
-          • <code>/note &lt;内容&gt;</code>: 添加客服内部私密备注 (客户不可见)
-          • <code>/tag &lt;标签&gt;</code>: 为会话打标签 (如 <code>/tag 节点故障</code>)
-          • <code>/help</code>: 查看本帮助指南
-        HELP
-        send_bot_topic_message(conversation, thread_id, help_text)
-        return head :ok
-      else
-        canned = conversation.account.canned_responses.find_by('lower(short_code) = ?', cmd)
-        if canned.present?
-          agent = conversation.assignee || conversation.account.users.first
-          conversation.messages.create!(
-            account: conversation.account,
-            inbox: conversation.inbox,
-            message_type: :outgoing,
-            content: canned.content,
-            sender: agent,
-            source_id: "telegram_canned_#{msg[:message_id]}"
-          )
-          send_bot_topic_message(conversation, thread_id, "🚀 <b>已发送快捷话术【#{canned.short_code}】给客户</b>:\n#{CGI.escapeHTML(canned.content)}")
-          return head :ok
-        end
-      end
+      handled = handle_telegram_command(conversation, thread_id, msg, text)
+      return head :ok if handled
     end
 
     process_telegram_reply(conversation, msg)
@@ -127,10 +54,321 @@ class Webhooks::TelegramRelayController < ActionController::API
     head :ok
   end
 
+  def handle_callback_query(cq)
+    cq_id = cq[:id]
+    data = cq[:data].to_s
+    from = cq[:from]
+    msg = cq[:message]
+    chat_id = msg.dig(:chat, :id)
+    msg_id = msg[:message_id]
+    thread_id = msg[:message_thread_id]
+
+    action, conv_id = data.split(':', 2)
+    conversation = Conversation.find_by(id: conv_id) if conv_id.present?
+    conversation ||= Conversation.where("additional_attributes ->> 'telegram_topic_id' = ?", thread_id.to_s).last
+
+    account = conversation&.account
+    return answer_callback(cq_id, '⚠️ 未找到对应会话', account: account, alert: true) if conversation.blank? || account.blank?
+
+    case action
+    when 'info'
+      service = Telegram::ForumRelayService.new(conversation: conversation)
+      new_text = service.build_profile_card_text
+      buttons = service.build_profile_card_buttons
+
+      HTTParty.post(Telegram::ForumRelayService.api_url('editMessageText', account), body: {
+        chat_id: chat_id,
+        message_id: msg_id,
+        text: new_text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+        reply_markup: buttons.to_json
+      }) rescue nil
+
+      answer_callback(cq_id, '📊 客户画像与订阅数据已刷新！', account: account)
+    when 'resolve'
+      conversation.resolved! unless conversation.resolved?
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      answer_callback(cq_id, '✅ 会话已标记解决，话题已关闭。', account: account)
+    when 'lead'
+      conversation.add_labels(['已留资'])
+      Telegram::ForumRelayService.update_topic_title(conversation)
+      answer_callback(cq_id, '🏷️ 已成功为会话添加【已留资】标签！', account: account)
+    when 'block'
+      conversation.add_labels(['已拉黑'])
+      conversation.mute!
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      answer_callback(cq_id, '🚫 该访客已拉黑屏蔽，会话已静音并解决！', account: account, alert: true)
+    else
+      answer_callback(cq_id, '未知指令', account: account)
+    end
+  rescue StandardError => e
+    Rails.logger.error "Callback query error: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
+    answer_callback(cq[:id], "操作失败: #{e.message}", alert: true) rescue nil
+  end
+
+  def answer_callback(cq_id, text, account: nil, alert: false)
+    url = Telegram::ForumRelayService.api_url('answerCallbackQuery', account)
+    HTTParty.post(url, body: {
+      callback_query_id: cq_id,
+      text: text,
+      show_alert: alert
+    })
+  rescue StandardError => e
+    Rails.logger.warn "Failed to answer callback query: #{e.message}"
+  end
+
+  def handle_edited_message(edited_msg)
+    chat_id = edited_msg.dig(:chat, :id).to_s
+    thread_id = edited_msg[:message_thread_id]
+    return if thread_id.blank?
+
+    conversation = Conversation.where("additional_attributes ->> 'telegram_topic_id' = ?", thread_id.to_s).last
+    return if conversation.blank?
+
+    tg_msg_id = edited_msg[:message_id]
+    target_msg = conversation.messages.where(source_id: "telegram_#{tg_msg_id}").last
+    return if target_msg.blank?
+
+    new_text = (edited_msg[:text] || edited_msg[:caption]).to_s.strip
+    return if new_text.blank?
+
+    from = edited_msg[:from] || {}
+    matched_agent = find_agent_for_telegram_sender(conversation.account, from)
+    final_content = if matched_agent.present?
+                      new_text
+                    else
+                      from_name = [from[:first_name], from[:last_name]].compact.join(' ').presence || from[:username] || 'TG客服'
+                      "[TG客服: #{from_name}]\n#{new_text}"
+                    end
+
+    target_msg.update!(content: final_content)
+  rescue StandardError => e
+    Rails.logger.warn "Failed to handle edited message: #{e.message}"
+  end
+
+  def handle_telegram_command(conversation, thread_id, msg, text)
+    parts = text.split(/\s+/, 2)
+    cmd = parts.first.to_s.downcase.sub(%r{^/}, '').sub(/@\w+$/, '')
+    cmd_args = parts.second.to_s.strip
+    from = msg[:from] || {}
+    account = conversation.account
+
+    case cmd
+    when 'resolve', 'close', '解决'
+      conversation.resolved! unless conversation.resolved?
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      true
+    when 'reopen', 'open', '重开'
+      conversation.open! unless conversation.open?
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      true
+    when 'info', 'user', 'profile', '用户信息'
+      Telegram::ForumRelayService.new(conversation: conversation).send_initial_profile_card(thread_id)
+      true
+    when 'assign', '转接', '分配'
+      handle_assign_command(conversation, thread_id, cmd_args)
+      true
+    when 'block', 'mute', '拉黑', '屏蔽'
+      conversation.add_labels(['已拉黑'])
+      conversation.mute!
+      Telegram::ForumRelayService.handle_conversation_status_change(conversation)
+      send_bot_topic_message(conversation, thread_id, "🚫 <b>该访客已成功拉黑屏蔽</b>\n会话已静音并标记解决，访客已被加入黑名单。")
+      true
+    when 'bind', '绑定'
+      handle_bind_command(conversation, thread_id, from, cmd_args)
+      true
+    when 'del', 'recall', '撤回', '删除'
+      handle_delete_command(conversation, thread_id, msg)
+      true
+    when 'note', '备注'
+      if cmd_args.present?
+        agent = find_agent_for_telegram_sender(account, from) || conversation.assignee || account.users.first
+        conversation.messages.create!(
+          account: account,
+          inbox: conversation.inbox,
+          message_type: :activity,
+          private: true,
+          content: cmd_args,
+          sender: agent
+        )
+        send_bot_topic_message(conversation, thread_id, "📝 <b>内部私密备注已记录 (仅客服可见)</b>:\n#{CGI.escapeHTML(cmd_args)}")
+      else
+        send_bot_topic_message(conversation, thread_id, "⚠️ 请提供备注内容，例如: <code>/note 客户反馈香港02节点超时</code>")
+      end
+      true
+    when 'tag', 'label', '标签'
+      if cmd_args.present?
+        labels = cmd_args.split(/[,，\s]+/).map(&:strip).reject(&:blank?)
+        conversation.add_labels(labels)
+        send_bot_topic_message(conversation, thread_id, "🏷️ <b>已添加会话标签</b>: #{CGI.escapeHTML(labels.join(', '))}")
+      else
+        send_bot_topic_message(conversation, thread_id, "⚠️ 请提供标签名，例如: <code>/tag 节点故障, 充值未到账</code>")
+      end
+      true
+    when 'canned', 'quick', '快捷回复', '话术'
+      canned_list = account.canned_responses.order(:short_code).limit(25)
+      if canned_list.any?
+        lines = canned_list.map do |cr|
+          "• <code>/#{cr.short_code}</code> : #{CGI.escapeHTML(cr.content.truncate(45))}"
+        end
+        send_bot_topic_message(conversation, thread_id, "📋 <b>快捷预设话术列表</b> (直接发送 <code>/快捷码</code> 即可发给客户):\n\n#{lines.join("\n")}")
+      else
+        send_bot_topic_message(conversation, thread_id, "📋 暂无预设快捷话术，可在 Chatwoot 后台【设置 -> 快捷回复】中添加。")
+      end
+      true
+    when 'help', '帮助'
+      help_text = <<~HELP.strip
+        💡 <b>Telegram 客服操作指令与快捷键指南</b>
+
+        • <b>直接回复</b>: 发送文字/图片/动图/语音/文件，直接同步回复客户
+        • <b>内联按钮</b>: 话题顶部卡片自带 <code>[刷新数据]</code> <code>[解决]</code> <code>[已留资]</code> <code>[拉黑]</code>
+        • <code>/resolve</code>: 解决并关闭当前会话
+        • <code>/reopen</code>: 重新打开已关闭会话
+        • <code>/info</code>: 重新调出客户画像与订阅详情卡片
+        • <code>/assign &lt;客服&gt;</code>: 将会话转接给指定客服 (如 <code>/assign 张三</code>)
+        • <code>/block</code>: 一键拉黑恶意访客并关闭会话
+        • <code>/bind &lt;邮箱&gt;</code>: 绑定 Telegram 身份至后台客服账户
+        • <code>/del</code>: 撤回消息 (回复某条消息并发送 <code>/del</code>)
+        • <code>/canned</code>: 查看所有快捷预设话术列表
+        • <code>/&lt;快捷码&gt;</code>: 直接发送预设话术给客户 (如 <code>/clash</code>)
+        • <code>/note &lt;内容&gt;</code>: 添加客服内部私密备注 (客户不可见)
+        • <code>/tag &lt;标签&gt;</code>: 为会话打标签 (如 <code>/tag 充值问题</code>)
+        • <code>/help</code>: 查看本指令帮助
+      HELP
+      send_bot_topic_message(conversation, thread_id, help_text)
+      true
+    else
+      canned = account.canned_responses.find_by('lower(short_code) = ?', cmd)
+      if canned.present?
+        agent = find_agent_for_telegram_sender(account, from) || conversation.assignee || account.users.first
+        conversation.messages.create!(
+          account: account,
+          inbox: conversation.inbox,
+          message_type: :outgoing,
+          content: canned.content,
+          sender: agent,
+          source_id: "telegram_canned_#{msg[:message_id]}"
+        )
+        send_bot_topic_message(conversation, thread_id, "🚀 <b>已发送快捷话术【#{canned.short_code}】给客户</b>:\n#{CGI.escapeHTML(canned.content)}")
+        true
+      else
+        false
+      end
+    end
+  end
+
+  def handle_assign_command(conversation, thread_id, cmd_args)
+    account = conversation.account
+    users = account.users.to_a
+
+    if cmd_args.blank?
+      lines = users.map { |u| "• <code>/assign #{u.email}</code> (#{u.name})" }
+      send_bot_topic_message(conversation, thread_id, "👥 <b>可用客服列表</b>:\n\n#{lines.join("\n")}\n\n💡 <i>提示: 发送 <code>/assign &lt;邮箱或名字&gt;</code> 即可转接。</i>")
+      return
+    end
+
+    query = cmd_args.downcase.sub(/^@/, '')
+    target_user = users.find do |u|
+      u.email.to_s.downcase == query ||
+        u.email.to_s.downcase.split('@').first == query ||
+        u.name.to_s.downcase.include?(query) ||
+        u.custom_attributes&.dig('telegram_username').to_s.downcase == query
+    end
+
+    if target_user.present?
+      conversation.update!(assignee: target_user)
+      send_bot_topic_message(conversation, thread_id, "🤝 <b>会话已成功转接！</b>\n当前会话已指派给客服: <b>#{CGI.escapeHTML(target_user.name)}</b> (<code>#{target_user.email}</code>)")
+    else
+      send_bot_topic_message(conversation, thread_id, "⚠️ 未找到匹配的客服【#{CGI.escapeHTML(cmd_args)}】，可发送 <code>/assign</code> 查看全部客服列表。")
+    end
+  end
+
+  def handle_bind_command(conversation, thread_id, from, email_arg)
+    account = conversation.account
+    from_id = from[:id].to_s
+    from_username = from[:username].to_s.sub(/^@/, '')
+    from_name = [from[:first_name], from[:last_name]].compact.join(' ').presence || from_username || "TG-#{from_id.last(4)}"
+
+    if email_arg.blank?
+      send_bot_topic_message(conversation, thread_id, "⚠️ 请提供您的 Chatwoot 后台登录邮箱，例如: <code>/bind kf1@example.com</code>")
+      return
+    end
+
+    target_user = account.users.find_by('lower(email) = ?', email_arg.downcase)
+    if target_user.present?
+      attrs = (target_user.custom_attributes || {}).merge(
+        'telegram_user_id' => from_id,
+        'telegram_username' => from_username
+      )
+      target_user.update_column(:custom_attributes, attrs)
+      send_bot_topic_message(conversation, thread_id, "✅ <b>客服身份绑定成功！</b>\n已将 Telegram 用户 <b>#{CGI.escapeHTML(from_name)}</b> 绑定至后台客服：<code>#{target_user.email}</code> (#{target_user.name})。后续您的所有发言将以此客服身份同步给客户与后台。")
+    else
+      send_bot_topic_message(conversation, thread_id, "⚠️ 系统中未找到邮箱为 <code>#{CGI.escapeHTML(email_arg)}</code> 的客服账号，请检查拼写或在后台确认。")
+    end
+  end
+
+  def handle_delete_command(conversation, thread_id, msg)
+    account = conversation.account
+    reply_msg = msg[:reply_to_message]
+    unless reply_msg.present?
+      send_bot_topic_message(conversation, thread_id, "⚠️ 请<b>引用/回复</b>您要撤回的那条消息，并输入 <code>/del</code>。")
+      return
+    end
+
+    target_tg_id = reply_msg[:message_id]
+    target_msg = conversation.messages.where("source_id = ? OR additional_attributes ->> 'telegram_message_id' = ?", "telegram_#{target_tg_id}", target_tg_id.to_s).last
+
+    if target_msg.present?
+      target_msg.update!(content: I18n.t('conversations.messages.deleted'), content_attributes: { deleted: true })
+      target_msg.attachments.destroy_all rescue nil
+    end
+
+    gid = Telegram::ForumRelayService.group_id(account)
+    HTTParty.post(Telegram::ForumRelayService.api_url('deleteMessage', account), body: { chat_id: gid, message_id: target_tg_id }) rescue nil
+    HTTParty.post(Telegram::ForumRelayService.api_url('deleteMessage', account), body: { chat_id: gid, message_id: msg[:message_id] }) rescue nil
+  end
+
+  def find_agent_for_telegram_sender(account, from)
+    return nil if account.blank? || from.blank?
+
+    from_id = from[:id].to_s
+    from_username = from[:username].to_s.downcase.sub(/^@/, '')
+    from_full_name = [from[:first_name], from[:last_name]].compact.join(' ').strip
+
+    users = account.users.to_a
+
+    # 1. Match by custom_attributes['telegram_user_id']
+    match = users.find { |u| u.custom_attributes&.dig('telegram_user_id').to_s == from_id }
+    return match if match.present?
+
+    # 2. Match by custom_attributes['telegram_username']
+    if from_username.present?
+      match = users.find { |u| u.custom_attributes&.dig('telegram_username').to_s.downcase == from_username }
+      return match if match.present?
+
+      # 3. Match by email prefix
+      match = users.find { |u| u.email.to_s.split('@').first.downcase == from_username }
+      return match if match.present?
+    end
+
+    # 4. Match by user display name or full name
+    if from_full_name.present?
+      match = users.find { |u| u.name.to_s.downcase == from_full_name.downcase || u.display_name.to_s.downcase == from_full_name.downcase }
+      return match if match.present?
+    end
+
+    nil
+  end
+
   def self.register_telegram_commands(bot_token)
     commands = [
       { command: 'resolve', description: '✅ 解决并关闭当前会话' },
       { command: 'info', description: '📊 刷新客户画像与订阅详情' },
+      { command: 'assign', description: '👥 会话转接: /assign <客服名或邮箱>' },
+      { command: 'block', description: '🚫 拉黑并屏蔽访客: /block' },
+      { command: 'bind', description: '🔗 绑定客服账号: /bind <后台邮箱>' },
+      { command: 'del', description: '🗑️ 撤回消息: 回复消息发送 /del' },
       { command: 'reopen', description: '🔄 重新打开已解决会话' },
       { command: 'canned', description: '📋 查看快捷回复话术列表' },
       { command: 'note', description: '📝 内部私密备注: /note 内容' },
@@ -169,7 +407,7 @@ class Webhooks::TelegramRelayController < ActionController::API
 
     res = HTTParty.post("https://api.telegram.org/bot#{bot_token}/setWebhook", body: {
       url: webhook_url,
-      allowed_updates: ['message', 'edited_message']
+      allowed_updates: ['message', 'edited_message', 'callback_query']
     })
 
     # Auto register / command menu in Telegram
@@ -281,7 +519,15 @@ class Webhooks::TelegramRelayController < ActionController::API
       text = "📍 位置: 纬度 #{location[:latitude]}, 经度 #{location[:longitude]}"
     end
 
-    agent = conversation.assignee || conversation.account.users.first
+    from = msg[:from] || {}
+    matched_agent = find_agent_for_telegram_sender(conversation.account, from)
+    agent = matched_agent || conversation.assignee || conversation.account.users.first
+
+    from_full_name = [from[:first_name], from[:last_name]].compact.join(' ').strip
+    tg_name = from_full_name.presence || (from[:username].present? ? "@#{from[:username]}" : "TG-#{from[:id].to_s.last(4)}")
+
+    # If sender is not bound to a Chatwoot agent, prepend [TG客服: 张三]
+    prefix = matched_agent.present? ? '' : "[TG客服: #{tg_name}]\n"
 
     default_content = if photo_array.present?
                         '[图片]'
@@ -297,13 +543,21 @@ class Webhooks::TelegramRelayController < ActionController::API
                         '[附件]'
                       end
 
+    raw_content = text.presence || default_content
+    final_content = raw_content.present? ? "#{prefix}#{raw_content}" : nil
+
     message = conversation.messages.build(
       account: conversation.account,
       inbox: conversation.inbox,
       message_type: :outgoing,
-      content: text.presence || default_content,
+      content: final_content,
       sender: agent,
-      source_id: "telegram_#{msg[:message_id]}"
+      source_id: "telegram_#{msg[:message_id]}",
+      content_attributes: {
+        telegram_sender_id: from[:id].to_s,
+        telegram_sender_username: from[:username].to_s,
+        telegram_sender_name: tg_name
+      }
     )
 
     attach_photo(message, photo_array) if photo_array.present?
@@ -313,9 +567,8 @@ class Webhooks::TelegramRelayController < ActionController::API
     attach_voice(message, voice || audio) if (voice || audio).present?
     attach_video(message, video) if video.present?
 
-    # If visual media (photo, animation, video, or sticker) was attached and no custom text was typed,
-    # clear content so it renders cleanly as visual media without a redundant text bubble
-    if message.attachments.any? { |att| att.image? || att.video? } && msg[:text].blank? && msg[:caption].blank?
+    # If visual media without custom caption, and sender is bound, clear text bubble
+    if message.attachments.any? { |att| att.image? || att.video? } && msg[:text].blank? && msg[:caption].blank? && matched_agent.present?
       message.content = nil
     end
 

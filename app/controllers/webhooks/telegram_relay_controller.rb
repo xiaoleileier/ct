@@ -29,6 +29,9 @@ class Webhooks::TelegramRelayController < ActionController::API
     expected_group_id = Telegram::ForumRelayService.group_id(account).to_s
     return head :ok unless chat_id == expected_group_id
 
+    # Auto ensure commands are registered for group scopes
+    ensure_commands_registered(account, expected_group_id)
+
     # Sync forum topic closed / reopened actions from Telegram to Chatwoot
     if msg[:forum_topic_closed].present?
       conversation.resolved! unless conversation.resolved?
@@ -361,7 +364,9 @@ class Webhooks::TelegramRelayController < ActionController::API
     nil
   end
 
-  def self.register_telegram_commands(bot_token)
+  def self.register_telegram_commands(bot_token, group_id = nil)
+    return { 'ok' => false, 'error' => '未配置 Telegram 机器人 Token' } if bot_token.blank?
+
     commands = [
       { command: 'resolve', description: '✅ 解决并关闭当前会话' },
       { command: 'info', description: '📊 刷新客户画像与订阅详情' },
@@ -376,11 +381,28 @@ class Webhooks::TelegramRelayController < ActionController::API
       { command: 'help', description: '💡 客服指令操作帮助指南' }
     ]
 
-    HTTParty.post(
-      "https://api.telegram.org/bot#{bot_token}/setMyCommands",
-      headers: { 'Content-Type' => 'application/json' },
-      body: { commands: commands }.to_json
-    ).parsed_response
+    scopes = [
+      { type: 'default' },
+      { type: 'all_group_chats' },
+      { type: 'all_chat_administrators' }
+    ]
+
+    if group_id.present?
+      scopes << { type: 'chat', chat_id: group_id }
+      scopes << { type: 'chat_administrators', chat_id: group_id }
+    end
+
+    results = []
+    scopes.each do |scope|
+      res = HTTParty.post(
+        "https://api.telegram.org/bot#{bot_token}/setMyCommands",
+        headers: { 'Content-Type' => 'application/json' },
+        body: { commands: commands, scope: scope }.to_json
+      )
+      results << (res.parsed_response || {}) rescue nil
+    end
+
+    { 'ok' => true, 'scopes_updated' => scopes.size, 'results' => results }
   rescue StandardError => e
     Rails.logger.warn "Failed to register telegram commands: #{e.message}"
     { 'ok' => false, 'error' => e.message }
@@ -389,9 +411,10 @@ class Webhooks::TelegramRelayController < ActionController::API
   def sync_commands
     account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
     bot_token = params[:bot_token].presence || Telegram::ForumRelayService.bot_token(account)
+    group_id = params[:group_id].presence || Telegram::ForumRelayService.group_id(account)
     return render json: { ok: false, error: '未配置 Telegram 机器人 Token' }, status: :unprocessable_entity if bot_token.blank?
 
-    res = self.class.register_telegram_commands(bot_token)
+    res = self.class.register_telegram_commands(bot_token, group_id)
     render json: { ok: res['ok'] == true, telegram_response: res }
   rescue StandardError => e
     render json: { ok: false, error: e.message }, status: :unprocessable_entity
@@ -400,6 +423,7 @@ class Webhooks::TelegramRelayController < ActionController::API
   def setup_webhook
     account = Account.find_by(id: params[:account_id]) if params[:account_id].present?
     bot_token = params[:bot_token].presence || Telegram::ForumRelayService.bot_token(account)
+    group_id = params[:group_id].presence || Telegram::ForumRelayService.group_id(account)
     return render json: { ok: false, error: '未配置 Telegram 机器人 Token' }, status: :unprocessable_entity if bot_token.blank?
 
     frontend_url = ENV.fetch('FRONTEND_URL', request.base_url)
@@ -410,8 +434,8 @@ class Webhooks::TelegramRelayController < ActionController::API
       allowed_updates: ['message', 'edited_message', 'callback_query']
     })
 
-    # Auto register / command menu in Telegram
-    self.class.register_telegram_commands(bot_token)
+    # Auto register / command menu in Telegram across all scopes
+    self.class.register_telegram_commands(bot_token, group_id)
 
     render json: {
       ok: res.parsed_response['ok'] == true,
@@ -437,11 +461,11 @@ class Webhooks::TelegramRelayController < ActionController::API
     webhook_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getWebhookInfo").parsed_response['result']
 
     # Fetch and ensure bot commands are registered
-    commands_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMyCommands").parsed_response
+    commands_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMyCommands?scope=%7B%22type%22:%22all_group_chats%22%7D").parsed_response
     commands = commands_res['ok'] ? commands_res['result'] : []
     if commands.blank?
-      self.class.register_telegram_commands(bot_token)
-      commands_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMyCommands").parsed_response
+      self.class.register_telegram_commands(bot_token, group_id)
+      commands_res = HTTParty.get("https://api.telegram.org/bot#{bot_token}/getMyCommands?scope=%7B%22type%22:%22all_group_chats%22%7D").parsed_response
       commands = commands_res['ok'] ? commands_res['result'] : []
     end
 
@@ -486,6 +510,19 @@ class Webhooks::TelegramRelayController < ActionController::API
   end
 
   private
+
+  def ensure_commands_registered(account, group_id)
+    bot_token = Telegram::ForumRelayService.bot_token(account)
+    return if bot_token.blank?
+
+    cache_key = "tg_commands_registered_v4_#{Digest::MD5.hexdigest("#{bot_token}_#{group_id}")}"
+    return if Rails.cache.exist?(cache_key)
+
+    self.class.register_telegram_commands(bot_token, group_id)
+    Rails.cache.write(cache_key, true, expires_in: 1.day)
+  rescue StandardError => e
+    Rails.logger.warn "Failed to auto-register telegram commands: #{e.message}"
+  end
 
   def send_bot_topic_message(conversation, thread_id, html_text)
     account = conversation.account

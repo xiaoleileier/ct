@@ -41,12 +41,10 @@ class Webhooks::TelegramRelayController < ActionController::API
       when 'resolve', 'close', '解决'
         conversation.resolved! unless conversation.resolved?
         Telegram::ForumRelayService.handle_conversation_status_change(conversation)
-        send_bot_topic_message(conversation, thread_id, "✅ <b>会话 ##{conversation.display_id} 已由客服标记为【已解决】</b>")
         return head :ok
       when 'reopen', 'open', '重开'
         conversation.open! unless conversation.open?
         Telegram::ForumRelayService.handle_conversation_status_change(conversation)
-        send_bot_topic_message(conversation, thread_id, "🔄 <b>会话 ##{conversation.display_id} 已由客服重新打开</b>")
         return head :ok
       when 'info', 'user', 'profile', '用户信息'
         Telegram::ForumRelayService.new(conversation: conversation).send_initial_profile_card(thread_id)

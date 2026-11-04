@@ -309,6 +309,8 @@ class Message < ApplicationRecord
   end
 
   def relay_to_telegram_forum
+    return if activity? || input_csat? || private?
+
     ::Telegram::ForumRelayJob.perform_later(id) if ::Telegram::ForumRelayService.configured?(account)
   end
 

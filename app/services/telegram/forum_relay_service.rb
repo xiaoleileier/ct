@@ -36,6 +36,8 @@ class Telegram::ForumRelayService
     return unless self.class.configured?(account)
     return if message.source_id&.start_with?('telegram_')
     return if message.private?
+    return if message.activity?
+    return if message.input_csat?
 
     topic_id = ensure_topic_id!
     return if topic_id.blank?
@@ -57,22 +59,10 @@ class Telegram::ForumRelayService
         chat_id: gid,
         message_thread_id: topic_id
       })
-      HTTParty.post(api_url('sendMessage', account), body: {
-        chat_id: gid,
-        message_thread_id: topic_id,
-        text: '✅ <b>该会话已被客服在后台解决 (Resolved)</b>',
-        parse_mode: 'HTML'
-      })
     elsif conversation.open?
       HTTParty.post(api_url('reopenForumTopic', account), body: {
         chat_id: gid,
         message_thread_id: topic_id
-      })
-      HTTParty.post(api_url('sendMessage', account), body: {
-        chat_id: gid,
-        message_thread_id: topic_id,
-        text: '🔄 <b>该会话已被客服在后台重新打开 (Reopened)</b>',
-        parse_mode: 'HTML'
       })
     end
   rescue StandardError => e

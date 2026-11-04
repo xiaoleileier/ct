@@ -9,6 +9,8 @@ class Telegram::ForumRelayJob < MutexApplicationJob
     return unless message
     return if message.source_id&.start_with?('telegram_')
     return if message.private?
+    return if message.activity?
+    return if message.input_csat?
 
     key = format(::Redis::Alfred::TELEGRAM_RELAY_MUTEX, conversation_id: message.conversation_id)
     with_lock(key, 20.seconds) do
